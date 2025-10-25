@@ -12,9 +12,14 @@ import UIKit
 struct HistoryView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var chargingRecords: [ChargingRecord]
+    @Query private var userSettings: [UserSettings]
     @State private var selectedMonth = Date()
     @State private var editingRecord: ChargingRecord?
     private let dataManager = DataManager.shared
+    
+    private var currencySymbol: String {
+        userSettings.first?.currencySymbol ?? "¥"
+    }
     
     var body: some View {
         NavigationView {
@@ -111,7 +116,7 @@ struct HistoryView: View {
                                     }
                                     
                                     HStack(spacing: 16) {
-                                        StatisticItem(title: "总支出", value: "¥\(String(format: "%.0f", monthStats.totalExpense))", color: .primary)
+                                        StatisticItem(title: "总支出", value: "\(currencySymbol)\(String(format: "%.0f", monthStats.totalExpense))", color: .primary)
                                         StatisticItem(title: "充电次数", value: "\(monthStats.count)", color: .primary)
                                         StatisticItem(title: "平均度数", value: String(format: "%.1f", monthStats.averageKwh), color: .primary)
                                     }
@@ -128,7 +133,7 @@ struct HistoryView: View {
                                 // 时间轴记录
                                 VStack(spacing: 24) {
                                     ForEach(timelineData, id: \.date) { dayData in
-                                        TimelineDayView(dayData: dayData, onEdit: { record in
+                                        TimelineDayView(dayData: dayData, currencySymbol: currencySymbol, onEdit: { record in
                                             editingRecord = record
                                         }, onDelete: { record in
                                             deleteRecord(record)
@@ -193,6 +198,7 @@ struct StatisticItem: View {
 
 struct TimelineDayView: View {
     let dayData: TimelineDayData
+    let currencySymbol: String
     let onEdit: (ChargingRecord) -> Void
     let onDelete: (ChargingRecord) -> Void
     
@@ -218,7 +224,7 @@ struct TimelineDayView: View {
                 
                 Spacer()
                 
-                Text("¥\(String(format: "%.2f", dayData.totalAmount))")
+                Text("\(currencySymbol)\(String(format: "%.2f", dayData.totalAmount))")
                     .font(.system(size: 14))
                     .foregroundColor(.secondary)
             }
@@ -227,7 +233,7 @@ struct TimelineDayView: View {
             // 记录列表
             VStack(spacing: 12) {
                 ForEach(dayData.records, id: \.id) { record in
-                    SwipeableRecordRow(record: record, onEdit: {
+                    SwipeableRecordRow(record: record, currencySymbol: currencySymbol, onEdit: {
                         onEdit(record)
                     }, onDelete: {
                         onDelete(record)
@@ -241,6 +247,7 @@ struct TimelineDayView: View {
 // 可左滑的记录行组件
 struct SwipeableRecordRow: View {
     let record: ChargingRecord
+    let currencySymbol: String
     let onEdit: () -> Void
     let onDelete: () -> Void
     
@@ -296,7 +303,7 @@ struct SwipeableRecordRow: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 
                 // 前景内容 - 覆盖整个区域
-                HistoryRecordRow(record: record)
+                HistoryRecordRow(record: record, currencySymbol: currencySymbol)
                     .frame(width: geometry.size.width)
                     .background(
                         RoundedRectangle(cornerRadius: 16)
@@ -344,6 +351,7 @@ struct SwipeableRecordRow: View {
 
 struct HistoryRecordRow: View {
     let record: ChargingRecord
+    let currencySymbol: String
     
     var body: some View {
         HStack(spacing: 12) {
@@ -372,11 +380,11 @@ struct HistoryRecordRow: View {
             
             // 金额
             VStack(alignment: .trailing, spacing: 4) {
-                Text("¥\(String(format: "%.2f", record.totalAmount))")
+                Text("\(currencySymbol)\(String(format: "%.2f", record.totalAmount))")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.primary)
                 
-                Text(record.serviceFee > 0 ? "服务费¥\(String(format: "%.0f", record.serviceFee))" : "无服务费")
+                Text(record.serviceFee > 0 ? "服务费\(currencySymbol)\(String(format: "%.0f", record.serviceFee))" : "无服务费")
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
             }

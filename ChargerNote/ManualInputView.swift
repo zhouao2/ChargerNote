@@ -13,8 +13,13 @@ struct ManualInputView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Query private var categories: [ChargingStationCategory]
+    @Query private var userSettings: [UserSettings]
     
     let editingRecord: ChargingRecord?
+    
+    private var currencySymbol: String {
+        userSettings.first?.currencySymbol ?? "¥"
+    }
     
     @State private var totalAmount: String = ""
     @State private var electricityAmount: String = ""
@@ -147,7 +152,7 @@ struct ManualInputView: View {
                                     DetailInputRow(
                                         icon: "yensign",
                                         title: "电费金额",
-                                        value: electricityAmount.isEmpty ? "¥0.00" : "¥\(electricityAmount)",
+                                        value: electricityAmount.isEmpty ? "\(currencySymbol)0.00" : "\(currencySymbol)\(electricityAmount)",
                                         hasArrow: false,
                                         isSelected: currentEditingField == .electricityAmount
                                     )
@@ -159,7 +164,7 @@ struct ManualInputView: View {
                                     DetailInputRow(
                                         icon: "hand.raised",
                                         title: "服务费",
-                                        value: serviceFee.isEmpty ? "¥0.00" : "¥\(serviceFee)",
+                                        value: serviceFee.isEmpty ? "\(currencySymbol)0.00" : "\(currencySymbol)\(serviceFee)",
                                         hasArrow: false,
                                         isSelected: currentEditingField == .serviceFee
                                     )
@@ -182,7 +187,7 @@ struct ManualInputView: View {
                                     DetailInputRow(
                                         icon: "parkingsign",
                                         title: "停车费",
-                                        value: parkingFee.isEmpty ? "¥0.00" : "¥\(parkingFee)",
+                                        value: parkingFee.isEmpty ? "\(currencySymbol)0.00" : "\(currencySymbol)\(parkingFee)",
                                         hasArrow: false,
                                         isSelected: currentEditingField == .parkingFee
                                     )

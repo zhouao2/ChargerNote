@@ -12,9 +12,14 @@ import UIKit
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var chargingRecords: [ChargingRecord]
+    @Query private var userSettings: [UserSettings]
     @State private var showingManualInput = false
     @State private var editingRecord: ChargingRecord?
     private let dataManager = DataManager.shared
+    
+    private var currencySymbol: String {
+        userSettings.first?.currencySymbol ?? "¥"
+    }
     
     var body: some View {
         NavigationView {
@@ -59,7 +64,7 @@ struct HomeView: View {
                                                     .font(.system(size: 14))
                                                     .foregroundColor(.white.opacity(0.8))
                                                 
-                                                Text("¥\(String(format: "%.2f", dataManager.getMonthlyExpense(for: Date(), records: chargingRecords)))")
+                                                Text("\(currencySymbol)\(String(format: "%.2f", dataManager.getMonthlyExpense(for: Date(), records: chargingRecords)))")
                                                     .font(.system(size: 28, weight: .bold))
                                                     .foregroundColor(.white)
                                             }
@@ -183,7 +188,7 @@ struct HomeView: View {
                                         // 记录列表
                                         VStack(spacing: 12) {
                                             ForEach(dataManager.getTodayRecords(chargingRecords), id: \.id) { record in
-                                                SwipeableHomeRecordRow(record: record, onEdit: {
+                                                SwipeableHomeRecordRow(record: record, currencySymbol: currencySymbol, onEdit: {
                                                     editingRecord = record
                                                 }, onDelete: {
                                                     deleteRecord(record)
@@ -216,6 +221,7 @@ struct HomeView: View {
 // 可左滑的首页记录行组件
 struct SwipeableHomeRecordRow: View {
     let record: ChargingRecord
+    let currencySymbol: String
     let onEdit: () -> Void
     let onDelete: () -> Void
     
@@ -270,7 +276,7 @@ struct SwipeableHomeRecordRow: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 
                 // 前景内容 - 覆盖整个区域
-                ChargingRecordRow(record: record)
+                ChargingRecordRow(record: record, currencySymbol: currencySymbol)
                     .frame(width: geometry.size.width)
                     .background(
                         RoundedRectangle(cornerRadius: 16)
@@ -318,6 +324,7 @@ struct SwipeableHomeRecordRow: View {
 
 struct ChargingRecordRow: View {
     let record: ChargingRecord
+    let currencySymbol: String
     
     var body: some View {
         HStack(spacing: 12) {
@@ -346,11 +353,11 @@ struct ChargingRecordRow: View {
             
             // 金额
             VStack(alignment: .trailing, spacing: 4) {
-                Text("¥\(String(format: "%.2f", record.totalAmount))")
+                Text("\(currencySymbol)\(String(format: "%.2f", record.totalAmount))")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.primary)
                 
-                Text("服务费¥\(String(format: "%.0f", record.serviceFee))")
+                Text("服务费\(currencySymbol)\(String(format: "%.0f", record.serviceFee))")
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
             }

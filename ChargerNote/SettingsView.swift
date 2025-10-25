@@ -13,6 +13,7 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var chargingRecords: [ChargingRecord]
     @Query private var categories: [ChargingStationCategory]
+    @Query private var userSettings: [UserSettings]
     @State private var selectedCurrency: Currency = .cny
     @State private var showingAddCategory = false
     @State private var editingCategory: ChargingStationCategory?
@@ -28,6 +29,22 @@ struct SettingsView: View {
             case .cny: return "yensign"
             case .usd: return "dollarsign"
             case .eur: return "eurosign"
+            }
+        }
+        
+        var symbol: String {
+            switch self {
+            case .cny: return "¥"
+            case .usd: return "$"
+            case .eur: return "€"
+            }
+        }
+        
+        var code: String {
+            switch self {
+            case .cny: return "CNY"
+            case .usd: return "USD"
+            case .eur: return "EUR"
             }
         }
     }
@@ -108,6 +125,7 @@ struct SettingsView: View {
                                             hasCheckmark: selectedCurrency == currency,
                                             action: {
                                                 selectedCurrency = currency
+                                                updateCurrencySettings(currency)
                                             }
                                         )
                                     }
@@ -160,6 +178,41 @@ struct SettingsView: View {
             if categories.isEmpty {
                 createDefaultCategories()
             }
+            
+            // 初始化用户设置
+            if userSettings.isEmpty {
+                let defaultSettings = UserSettings()
+                modelContext.insert(defaultSettings)
+            }
+            
+            // 加载当前货币设置
+            if let settings = userSettings.first {
+                switch settings.currencyCode {
+                case "CNY":
+                    selectedCurrency = .cny
+                case "USD":
+                    selectedCurrency = .usd
+                case "EUR":
+                    selectedCurrency = .eur
+                default:
+                    selectedCurrency = .cny
+                }
+            }
+        }
+    }
+    
+    private func updateCurrencySettings(_ currency: Currency) {
+        if let settings = userSettings.first {
+            settings.currencyCode = currency.code
+            settings.currencySymbol = currency.symbol
+            settings.currencyName = currency.rawValue
+        } else {
+            let newSettings = UserSettings(
+                currencyCode: currency.code,
+                currencySymbol: currency.symbol,
+                currencyName: currency.rawValue
+            )
+            modelContext.insert(newSettings)
         }
     }
     

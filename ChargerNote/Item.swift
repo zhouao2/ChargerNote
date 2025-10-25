@@ -55,6 +55,22 @@ final class ChargingStationCategory {
     }
 }
 
+// 用户设置模型
+@Model
+final class UserSettings {
+    var id: UUID
+    var currencyCode: String // "CNY", "USD", "EUR"
+    var currencySymbol: String // "¥", "$", "€"
+    var currencyName: String // "人民币 (¥)", "美元 ($)", "欧元 (€)"
+    
+    init(currencyCode: String = "CNY", currencySymbol: String = "¥", currencyName: String = "人民币 (¥)") {
+        self.id = UUID()
+        self.currencyCode = currencyCode
+        self.currencySymbol = currencySymbol
+        self.currencyName = currencyName
+    }
+}
+
 // 保持原有的Item类以兼容现有代码
 @Model
 final class Item {

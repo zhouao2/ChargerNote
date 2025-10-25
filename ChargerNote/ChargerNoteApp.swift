@@ -15,6 +15,7 @@ struct ChargerNoteApp: App {
             Item.self,
             ChargingRecord.self,
             ChargingStationCategory.self,
+            UserSettings.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

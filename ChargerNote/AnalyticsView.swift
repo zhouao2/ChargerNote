@@ -13,8 +13,13 @@ struct AnalyticsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var chargingRecords: [ChargingRecord]
     @Query private var categories: [ChargingStationCategory]
+    @Query private var userSettings: [UserSettings]
     @State private var selectedTimeRange: TimeRange = .month
     private let dataManager = DataManager.shared
+    
+    private var currencySymbol: String {
+        userSettings.first?.currencySymbol ?? "¥"
+    }
     
     enum TimeRange: String, CaseIterable {
         case month = "月"
@@ -115,7 +120,7 @@ struct AnalyticsView: View {
                                 HStack(spacing: 16) {
                                     StatisticCard(
                                         title: selectedTimeRange == .month ? "本月支出" : selectedTimeRange == .quarter ? "本季支出" : "本年支出",
-                                        value: "¥\(String(format: "%.0f", filteredRecords.reduce(0) { $0 + $1.totalAmount }))",
+                                        value: "\(currencySymbol)\(String(format: "%.0f", filteredRecords.reduce(0) { $0 + $1.totalAmount }))",
                                         change: selectedTimeRange.rawValue,
                                         changeColor: .green,
                                         icon: "arrow.up"
@@ -150,7 +155,7 @@ struct AnalyticsView: View {
                                         ForEach(dataManager.getWeeklyExpenseData(filteredRecords), id: \.day) { data in
                                             VStack(spacing: 8) {
                                                 VStack(spacing: 4) {
-                                                    Text("¥\(String(format: "%.0f", data.amount))")
+                                                    Text("\(currencySymbol)\(String(format: "%.0f", data.amount))")
                                                         .font(.system(size: 10, weight: .medium))
                                                         .foregroundColor(.primary)
                                                     
@@ -196,7 +201,7 @@ struct AnalyticsView: View {
                                     
                                     VStack(spacing: 16) {
                                         ForEach(dataManager.getLocationStatistics(filteredRecords, categories: categories), id: \.stationType) { location in
-                                            LocationDistributionRow(location: location)
+                                            LocationDistributionRow(location: location, currencySymbol: currencySymbol)
                                         }
                                     }
                                 }
@@ -263,6 +268,7 @@ struct StatisticCard: View {
 
 struct LocationDistributionRow: View {
     let location: LocationStatistics
+    let currencySymbol: String
     
     var body: some View {
         HStack(spacing: 12) {
@@ -291,7 +297,7 @@ struct LocationDistributionRow: View {
             
             // 金额和进度条
             VStack(alignment: .trailing, spacing: 8) {
-                Text("¥\(String(format: "%.2f", location.totalAmount))")
+                Text("\(currencySymbol)\(String(format: "%.2f", location.totalAmount))")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.primary)
                 
