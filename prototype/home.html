@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>记账</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #34C759 0%, #30B04F 100%);
+        }
+        .card-shadow {
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .button-shadow {
+            box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- 状态栏 -->
+    <div class="bg-black text-white text-xs font-medium px-6 py-1 flex justify-between items-center">
+        <span>9:41</span>
+        <div class="flex items-center space-x-1">
+            <i class="fas fa-signal text-xs"></i>
+            <i class="fas fa-wifi text-xs"></i>
+            <i class="fas fa-battery-three-quarters text-xs"></i>
+        </div>
+    </div>
+
+    <!-- 顶部导航 -->
+    <div class="gradient-bg text-white px-6 py-4">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-2xl font-bold">充电记账</h1>
+            <i class="fas fa-bell text-xl"></i>
+        </div>
+        
+        <!-- 本月支出卡片 -->
+        <div class="bg-white bg-opacity-20 rounded-2xl p-6 backdrop-blur-sm">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-white text-opacity-80 text-sm">本月支出</span>
+                <i class="fas fa-chevron-right text-white text-opacity-60"></i>
+            </div>
+            <div class="text-3xl font-bold mb-1">¥1,247.50</div>
+            <div class="text-white text-opacity-80 text-sm">比上月 +12.5%</div>
+        </div>
+    </div>
+
+    <!-- 主要内容区域 -->
+    <div class="px-6 py-6">
+        <!-- 操作按钮区域 -->
+        <div class="grid grid-cols-2 gap-4 mb-8">
+            <!-- 上传截图按钮 -->
+            <button class="bg-white rounded-2xl p-6 card-shadow flex flex-col items-center space-y-3 hover:bg-gray-50 transition-colors">
+                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-camera text-2xl text-blue-600"></i>
+                </div>
+                <div class="text-center">
+                    <div class="font-semibold text-gray-800 mb-1">上传截图</div>
+                    <div class="text-xs text-gray-500">自动识别费用</div>
+                </div>
+            </button>
+
+            <!-- 手动输入按钮 -->
+            <button class="bg-white rounded-2xl p-6 card-shadow flex flex-col items-center space-y-3 hover:bg-gray-50 transition-colors">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-edit text-2xl text-green-600"></i>
+                </div>
+                <div class="text-center">
+                    <div class="font-semibold text-gray-800 mb-1">手动输入</div>
+                    <div class="text-xs text-gray-500">快速记录费用</div>
+                </div>
+            </button>
+        </div>
+
+        <!-- 今日记录 -->
+        <div class="mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-800">今日记录</h2>
+                <span class="text-sm text-gray-500">3条记录</span>
+            </div>
+
+            <!-- 记录列表 -->
+            <div class="space-y-3">
+                <!-- 记录项 1 -->
+                <div class="bg-white rounded-2xl p-4 card-shadow">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-charging-station text-orange-600"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium text-gray-800">特斯拉超级充电站</div>
+                                <div class="text-sm text-gray-500">14:30 • 45.2度电</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-semibold text-gray-800">¥89.50</div>
+                            <div class="text-xs text-gray-500">服务费¥12</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 记录项 2 -->
+                <div class="bg-white rounded-2xl p-4 card-shadow">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-charging-station text-blue-600"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium text-gray-800">小鹏充电站</div>
+                                <div class="text-sm text-gray-500">10:15 • 32.8度电</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-semibold text-gray-800">¥65.20</div>
+                            <div class="text-xs text-gray-500">服务费¥8</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 记录项 3 -->
+                <div class="bg-white rounded-2xl p-4 card-shadow">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-charging-station text-green-600"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium text-gray-800">蔚来换电站</div>
+                                <div class="text-sm text-gray-500">08:45 • 换电服务</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-semibold text-gray-800">¥120.00</div>
+                            <div class="text-xs text-gray-500">换电费用</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
+        <div class="grid grid-cols-4">
+            <button class="flex flex-col items-center py-3 text-green-600">
+                <i class="fas fa-home text-xl mb-1"></i>
+                <span class="text-xs font-medium">记账</span>
+            </button>
+            <button class="flex flex-col items-center py-3 text-gray-400">
+                <i class="fas fa-chart-bar text-xl mb-1"></i>
+                <span class="text-xs">统计</span>
+            </button>
+            <button class="flex flex-col items-center py-3 text-gray-400">
+                <i class="fas fa-history text-xl mb-1"></i>
+                <span class="text-xs">历史</span>
+            </button>
+            <button class="flex flex-col items-center py-3 text-gray-400">
+                <i class="fas fa-cog text-xl mb-1"></i>
+                <span class="text-xs">设置</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 底部安全区域 -->
+    <div class="h-20"></div>
+</body>
+</html>

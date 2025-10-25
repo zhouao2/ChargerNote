@@ -13,6 +13,8 @@ struct ChargerNoteApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
+            ChargingRecord.self,
+            ChargingStationCategory.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
