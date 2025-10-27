@@ -17,6 +17,7 @@ struct ManualInputView: View {
     @Query private var userSettings: [UserSettings]
     
     let editingRecord: ChargingRecord?
+    let extractedData: ExtractedChargingData?
     
     private var currencySymbol: String {
         userSettings.first?.currencySymbol ?? "¥"
@@ -41,8 +42,9 @@ struct ManualInputView: View {
         currentEditingField != nil
     }
     
-    init(editingRecord: ChargingRecord? = nil) {
+    init(editingRecord: ChargingRecord? = nil, extractedData: ExtractedChargingData? = nil) {
         self.editingRecord = editingRecord
+        self.extractedData = extractedData
     }
     
     enum EditingField {
@@ -354,6 +356,22 @@ struct ManualInputView: View {
                 chargingTime = record.chargingTime
                 parkingFee = String(format: "%.2f", record.parkingFee)
                 notes = record.notes
+            } else if let data = extractedData {
+                // 加载从图片中提取的数据
+                if !data.electricityAmount.isEmpty {
+                    electricityAmount = data.electricityAmount
+                }
+                if !data.serviceFee.isEmpty {
+                    serviceFee = data.serviceFee
+                }
+                if !data.electricityKwh.isEmpty {
+                    electricityKwh = data.electricityKwh
+                }
+                if !data.location.isEmpty {
+                    location = data.location
+                } else if !categories.isEmpty {
+                    location = categories.first?.name ?? ""
+                }
             } else if location.isEmpty && !categories.isEmpty {
                 // 新建记录，使用第一个分类作为默认值
                 location = categories.first?.name ?? ""

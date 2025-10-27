@@ -8,14 +8,22 @@
 import SwiftUI
 import SwiftData
 import UIKit
+import Vision
+import VisionKit
 
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
     @Query private var chargingRecords: [ChargingRecord]
     @Query private var userSettings: [UserSettings]
+    @Query(sort: \ChargingStationCategory.sortOrder) private var categories: [ChargingStationCategory]
     @State private var showingManualInput = false
     @State private var editingRecord: ChargingRecord?
+    @State private var showingImagePicker = false
+    @State private var extractedData: ExtractedChargingData?
+    @State private var isProcessingImage = false
+    @State private var showingNewStationAlert = false
+    @State private var recognizedStationName: String = ""
     private let dataManager = DataManager.shared
     
     private var currencySymbol: String {
@@ -106,7 +114,7 @@ struct HomeView: View {
                                     HStack(spacing: 16) {
                                         // 上传截图按钮
                                         Button(action: {
-                                            // TODO: 实现上传截图功能
+                                            showingImagePicker = true
                                         }) {
                                             VStack(spacing: 12) {
                                                 ZStack {
@@ -206,17 +214,288 @@ struct HomeView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingManualInput) {
-            ManualInputView()
+        .sheet(isPresented: $showingManualInput, onDismiss: {
+            extractedData = nil
+        }) {
+            if let data = extractedData {
+                ManualInputView(extractedData: data)
+            } else {
+                ManualInputView()
+            }
         }
         .sheet(item: $editingRecord) { record in
             ManualInputView(editingRecord: record)
+        }
+        .sheet(isPresented: $showingImagePicker) {
+            ImagePicker(onImageSelected: { image in
+                processImage(image)
+            })
+        }
+        .alert("识别到新站点", isPresented: $showingNewStationAlert) {
+            Button("创建站点") {
+                createNewStation(name: recognizedStationName)
+                showingManualInput = true
+            }
+            Button("使用现有站点") {
+                // 清除识别到的站点名称，让用户手动选择
+                if let data = extractedData {
+                    extractedData = ExtractedChargingData(
+                        electricityAmount: data.electricityAmount,
+                        serviceFee: data.serviceFee,
+                        electricityKwh: data.electricityKwh,
+                        location: ""
+                    )
+                }
+                showingManualInput = true
+            }
+            Button("取消", role: .cancel) { }
+        } message: {
+            Text("识别到充电站点「\(recognizedStationName)」，但该站点尚未添加到系统中。是否创建新站点？")
         }
     }
     
     private func deleteRecord(_ record: ChargingRecord) {
         modelContext.delete(record)
     }
+    
+    // 创建新充电站点
+    private func createNewStation(name: String) {
+        // 根据站点名称选择颜色和图标
+        var color = "#007AFF"
+        var icon = "bolt.circle.fill"
+        
+        if name.contains("特斯拉") || name.contains("Tesla") {
+            color = "#FF9500"
+            icon = "bolt.circle.fill"
+        } else if name.contains("小鹏") || name.contains("XPENG") {
+            color = "#007AFF"
+            icon = "bolt.circle.fill"
+        } else if name.contains("蔚来") || name.contains("NIO") {
+            color = "#34C759"
+            icon = "bolt.circle.fill"
+        } else if name.contains("国家电网") || name.contains("国网") {
+            color = "#AF52DE"
+            icon = "bolt.circle.fill"
+        }
+        
+        // 获取当前最大的 sortOrder
+        let maxSortOrder = categories.map { $0.sortOrder }.max() ?? 0
+        
+        let newCategory = ChargingStationCategory(
+            name: name,
+            color: color,
+            icon: icon,
+            sortOrder: maxSortOrder + 1
+        )
+        
+        modelContext.insert(newCategory)
+        print("创建新站点: \(name)")
+    }
+    
+    // 处理图片并进行 OCR 识别
+    private func processImage(_ image: UIImage) {
+        isProcessingImage = true
+        
+        guard let cgImage = image.cgImage else {
+            isProcessingImage = false
+            return
+        }
+        
+        let requestHandler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+        let request = VNRecognizeTextRequest { request, error in
+            if let error = error {
+                print("OCR Error: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    self.isProcessingImage = false
+                }
+                return
+            }
+            
+            guard let observations = request.results as? [VNRecognizedTextObservation] else {
+                DispatchQueue.main.async {
+                    self.isProcessingImage = false
+                }
+                return
+            }
+            
+            let recognizedText = observations.compactMap { observation in
+                observation.topCandidates(1).first?.string
+            }.joined(separator: "\n")
+            
+            print("识别的文本：\n\(recognizedText)")
+            
+            DispatchQueue.main.async {
+                self.extractDataFromText(recognizedText)
+                self.isProcessingImage = false
+            }
+        }
+        
+        request.recognitionLevel = .accurate
+        request.recognitionLanguages = ["zh-Hans", "en-US"]
+        request.usesLanguageCorrection = true
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                try requestHandler.perform([request])
+            } catch {
+                print("OCR 识别失败: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    self.isProcessingImage = false
+                }
+            }
+        }
+    }
+    
+    // 从识别的文字中提取充电数据
+    private func extractDataFromText(_ text: String) {
+        var electricityAmount: String = ""
+        var serviceFee: String = ""
+        var electricityKwh: String = ""
+        var location: String = ""
+        var totalAmount: String = ""
+        
+        let lines = text.components(separatedBy: .newlines)
+        
+        for line in lines {
+            let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+            print("处理行: \(trimmedLine)")
+            
+            // 提取充电度数（匹配 "XX.X kWh" 或 "XX.X度"）
+            if electricityKwh.isEmpty {
+                if let kwhMatch = trimmedLine.range(of: #"(\d+\.?\d*)\s*(kWh|度|kwh|KWH)"#, options: [.regularExpression, .caseInsensitive]) {
+                    let kwhString = String(trimmedLine[kwhMatch])
+                    if let number = extractNumber(from: kwhString) {
+                        electricityKwh = String(format: "%.1f", number)
+                        print("提取到充电度数: \(electricityKwh)")
+                    }
+                }
+            }
+            
+            // 提取电费金额（匹配 "电费"、"充电费"、"电量费" 后面的数字）
+            if electricityAmount.isEmpty {
+                let keywords = ["电费", "充电费", "电量费", "电费金额"]
+                for keyword in keywords {
+                    if trimmedLine.contains(keyword) {
+                        if let amount = extractNumber(from: trimmedLine) {
+                            electricityAmount = String(format: "%.2f", amount)
+                            print("提取到电费: \(electricityAmount)")
+                            break
+                        }
+                    }
+                }
+            }
+            
+            // 提取服务费
+            if serviceFee.isEmpty {
+                if trimmedLine.contains("服务费") {
+                    if let fee = extractNumber(from: trimmedLine) {
+                        serviceFee = String(format: "%.2f", fee)
+                        print("提取到服务费: \(serviceFee)")
+                    }
+                }
+            }
+            
+            // 提取总金额
+            if totalAmount.isEmpty {
+                let totalKeywords = ["总金额", "实付", "合计", "应付"]
+                for keyword in totalKeywords {
+                    if trimmedLine.contains(keyword) {
+                        if let amount = extractNumber(from: trimmedLine) {
+                            totalAmount = String(format: "%.2f", amount)
+                            print("提取到总金额: \(totalAmount)")
+                            break
+                        }
+                    }
+                }
+            }
+            
+            // 提取充电站点信息
+            if location.isEmpty {
+                if trimmedLine.contains("特斯拉") || trimmedLine.contains("Tesla") {
+                    location = "特斯拉充电站"
+                    print("识别到站点: \(location)")
+                } else if trimmedLine.contains("小鹏") || trimmedLine.contains("XPENG") {
+                    location = "小鹏充电站"
+                    print("识别到站点: \(location)")
+                } else if trimmedLine.contains("蔚来") || trimmedLine.contains("NIO") {
+                    location = "蔚来换电站"
+                    print("识别到站点: \(location)")
+                } else if trimmedLine.contains("国家电网") || trimmedLine.contains("国网") {
+                    location = "国家电网"
+                    print("识别到站点: \(location)")
+                }
+            }
+        }
+        
+        print("提取结果 - 度数:\(electricityKwh) 电费:\(electricityAmount) 服务费:\(serviceFee) 站点:\(location)")
+        
+        // 保存提取的数据
+        extractedData = ExtractedChargingData(
+            electricityAmount: electricityAmount,
+            serviceFee: serviceFee,
+            electricityKwh: electricityKwh,
+            location: location
+        )
+        
+        // 如果识别到了站点，检查是否存在
+        if !location.isEmpty {
+            let stationExists = categories.contains { category in
+                category.name == location || category.name.contains(location) || location.contains(category.name)
+            }
+            
+            if !stationExists {
+                // 站点不存在，显示确认弹窗
+                recognizedStationName = location
+                showingNewStationAlert = true
+                print("站点 '\(location)' 不存在，询问用户是否创建")
+            } else {
+                // 站点存在，直接打开输入页面
+                showingManualInput = true
+            }
+        } else {
+            // 未识别到站点，直接打开输入页面
+            showingManualInput = true
+        }
+    }
+    
+    // 从字符串中提取数字
+    private func extractNumber(from text: String) -> Double? {
+        // 替换中文符号为英文符号
+        let normalizedText = text
+            .replacingOccurrences(of: "¥", with: "")
+            .replacingOccurrences(of: "￥", with: "")
+            .replacingOccurrences(of: "元", with: "")
+            .replacingOccurrences(of: "：", with: ":")
+            .replacingOccurrences(of: "，", with: ",")
+        
+        // 匹配数字（支持小数）
+        let pattern = #"(\d+\.?\d*)"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            return nil
+        }
+        
+        let matches = regex.matches(in: normalizedText, range: NSRange(normalizedText.startIndex..., in: normalizedText))
+        
+        // 提取所有数字，返回最大的一个（通常金额是最大的数字）
+        var numbers: [Double] = []
+        for match in matches {
+            if let range = Range(match.range, in: normalizedText) {
+                if let number = Double(normalizedText[range]) {
+                    numbers.append(number)
+                }
+            }
+        }
+        
+        return numbers.max()
+    }
+}
+
+// 提取的充电数据结构
+struct ExtractedChargingData {
+    let electricityAmount: String
+    let serviceFee: String
+    let electricityKwh: String
+    let location: String
 }
 
 // 可左滑的首页记录行组件
@@ -447,6 +726,43 @@ struct ChargingRecordRow: View {
     }
 }
 
+// 图片选择器
+struct ImagePicker: UIViewControllerRepresentable {
+    let onImageSelected: (UIImage) -> Void
+    @Environment(\.dismiss) private var dismiss
+    
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.delegate = context.coordinator
+        picker.sourceType = .photoLibrary
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: ImagePicker
+        
+        init(_ parent: ImagePicker) {
+            self.parent = parent
+        }
+        
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+            if let image = info[.originalImage] as? UIImage {
+                parent.onImageSelected(image)
+            }
+            parent.dismiss()
+        }
+        
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.dismiss()
+        }
+    }
+}
 
 #Preview {
     HomeView()
