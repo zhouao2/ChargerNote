@@ -22,6 +22,7 @@ struct HomeView: View {
     @State private var showingImagePicker = false
     @State private var extractedData: ExtractedChargingData?
     @State private var isProcessingImage = false
+    @State private var processingStatus: String = "正在识别充电信息"
     @State private var showingNewStationAlert = false
     @State private var recognizedStationName: String = ""
     private let dataManager = DataManager.shared
@@ -212,6 +213,39 @@ struct HomeView: View {
                         }
                     }
                 }
+                
+                // OCR 识别进度指示器
+                if isProcessingImage {
+                    ZStack {
+                        Color.black.opacity(0.4)
+                            .ignoresSafeArea()
+                        
+                        VStack(spacing: 20) {
+                            // 加载动画
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(1.5)
+                            
+                            // 进度文字
+                            VStack(spacing: 8) {
+                                Text(processingStatus)
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .multilineTextAlignment(.center)
+                                
+                                Text("请稍候...")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.white.opacity(0.8))
+                            }
+                        }
+                        .padding(40)
+                        .background(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(Color.black.opacity(0.8))
+                        )
+                    }
+                    .transition(.opacity)
+                }
             }
         }
         .sheet(isPresented: $showingManualInput, onDismiss: {
@@ -243,7 +277,11 @@ struct HomeView: View {
                         electricityAmount: data.electricityAmount,
                         serviceFee: data.serviceFee,
                         electricityKwh: data.electricityKwh,
-                        location: ""
+                        location: "",
+                        totalAmount: data.totalAmount,
+                        points: data.points,
+                        notes: data.notes,
+                        chargingTime: data.chargingTime
                     )
                 }
                 showingManualInput = true
@@ -294,11 +332,23 @@ struct HomeView: View {
     
     // 处理图片并进行 OCR 识别
     private func processImage(_ image: UIImage) {
-        isProcessingImage = true
+        withAnimation {
+            isProcessingImage = true
+            processingStatus = "正在加载图片"
+        }
         
         guard let cgImage = image.cgImage else {
-            isProcessingImage = false
+            withAnimation {
+                isProcessingImage = false
+            }
             return
+        }
+        
+        // 延迟一下，让用户看到状态更新
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation {
+                processingStatus = "正在识别文字"
+            }
         }
         
         let requestHandler = VNImageRequestHandler(cgImage: cgImage, options: [:])
@@ -306,14 +356,18 @@ struct HomeView: View {
             if let error = error {
                 print("OCR Error: \(error.localizedDescription)")
                 DispatchQueue.main.async {
-                    self.isProcessingImage = false
+                    withAnimation {
+                        self.isProcessingImage = false
+                    }
                 }
                 return
             }
             
             guard let observations = request.results as? [VNRecognizedTextObservation] else {
                 DispatchQueue.main.async {
-                    self.isProcessingImage = false
+                    withAnimation {
+                        self.isProcessingImage = false
+                    }
                 }
                 return
             }
@@ -325,8 +379,17 @@ struct HomeView: View {
             print("识别的文本：\n\(recognizedText)")
             
             DispatchQueue.main.async {
-                self.extractDataFromText(recognizedText)
-                self.isProcessingImage = false
+                withAnimation {
+                    self.processingStatus = "正在提取充电信息"
+                }
+                
+                // 延迟一下让用户看到状态
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self.extractDataFromText(recognizedText)
+                    withAnimation {
+                        self.isProcessingImage = false
+                    }
+                }
             }
         }
         
@@ -340,7 +403,9 @@ struct HomeView: View {
             } catch {
                 print("OCR 识别失败: \(error.localizedDescription)")
                 DispatchQueue.main.async {
-                    self.isProcessingImage = false
+                    withAnimation {
+                        self.isProcessingImage = false
+                    }
                 }
             }
         }
@@ -353,88 +418,344 @@ struct HomeView: View {
         var electricityKwh: String = ""
         var location: String = ""
         var totalAmount: String = ""
+        var points: String = ""
+        var pointsDiscount: String = ""
+        var couponDiscount: String = ""
+        var energyDiscount: String = ""
+        var noteItems: [String] = []
+        var chargingTime: Date?
         
         let lines = text.components(separatedBy: .newlines)
+        
+        // 充电站品牌关键词映射
+        let stationKeywords: [(keywords: [String], name: String)] = [
+            (["特斯拉", "Tesla", "TESLA"], "特斯拉充电站"),
+            (["小鹏", "XPENG", "Xpeng", "小鹏汽车"], "小鹏充电站"),
+            (["蔚来", "NIO", "Nio"], "蔚来充电站"),
+            (["国家电网", "国网", "State Grid"], "国家电网"),
+            (["星星充电", "万马", "万马充电"], "星星充电"),
+            (["云快充", "云快"], "云快充"),
+            (["特来电", "特来电充电"], "特来电"),
+            (["e充电", "E充电"], "e充电"),
+            (["南方电网", "南网"], "南方电网"),
+            (["比亚迪", "BYD"], "比亚迪充电站"),
+            (["理想", "Li Auto", "LIXIANG"], "理想充电站"),
+            (["问界", "AITO"], "问界充电站"),
+            (["极氪", "ZEEKR"], "极氪充电站")
+        ]
+        
+        // 充电站后缀关键词（用于识别通用充电站名称）
+        let stationSuffixes = ["充电站", "超充站", "极充站", "换电站", "充电桩", "充电点", "服务站"]
         
         for line in lines {
             let trimmedLine = line.trimmingCharacters(in: .whitespaces)
             print("处理行: \(trimmedLine)")
             
-            // 提取充电度数（匹配 "XX.X kWh" 或 "XX.X度"）
-            if electricityKwh.isEmpty {
-                if let kwhMatch = trimmedLine.range(of: #"(\d+\.?\d*)\s*(kWh|度|kwh|KWH)"#, options: [.regularExpression, .caseInsensitive]) {
-                    let kwhString = String(trimmedLine[kwhMatch])
-                    if let number = extractNumber(from: kwhString) {
-                        electricityKwh = String(format: "%.1f", number)
-                        print("提取到充电度数: \(electricityKwh)")
+            // 1. 优先提取充电站名称
+            if location.isEmpty {
+                // 1.1 先尝试品牌关键词匹配
+                var foundBrand = false
+                for station in stationKeywords {
+                    if station.keywords.contains(where: { trimmedLine.contains($0) }) {
+                        location = station.name
+                        print("✅ 识别到充电站(品牌): \(location)")
+                        foundBrand = true
+                        break
+                    }
+                }
+                
+                // 1.2 如果没找到品牌，尝试匹配通用充电站名称格式
+                if !foundBrand {
+                    for suffix in stationSuffixes {
+                        if trimmedLine.contains(suffix) {
+                            // 提取完整的站点名称（移除特殊字符，保留中文、英文、数字）
+                            let cleanedLine = trimmedLine
+                                .replacingOccurrences(of: "：", with: "")
+                                .replacingOccurrences(of: ":", with: "")
+                                .trimmingCharacters(in: .whitespaces)
+                            
+                            // 如果这行文字长度合理（5-30个字符）且包含充电站后缀，就认为是站点名称
+                            if cleanedLine.count >= 5 && cleanedLine.count <= 30 {
+                                location = cleanedLine
+                                print("✅ 识别到充电站(通用): \(location)")
+                                break
+                            }
+                        }
                     }
                 }
             }
             
-            // 提取电费金额（匹配 "电费"、"充电费"、"电量费" 后面的数字）
+            // 2. 提取充电电量（匹配 "XX.X kWh" 或 "XX.X度"）
+            if electricityKwh.isEmpty {
+                // 匹配充电量相关的关键词
+                let kwhKeywords = ["充电电量", "充电量", "电量", "度数", "已充电量"]
+                let containsKwhKeyword = kwhKeywords.contains(where: { trimmedLine.contains($0) })
+                
+                if containsKwhKeyword || trimmedLine.range(of: #"(kWh|度|kwh|KWH)"#, options: [.regularExpression, .caseInsensitive]) != nil {
+                    if let kwhMatch = trimmedLine.range(of: #"(\d+\.?\d*)\s*(kWh|度|kwh|KWH)"#, options: [.regularExpression, .caseInsensitive]) {
+                        let kwhString = String(trimmedLine[kwhMatch])
+                        if let number = extractNumber(from: kwhString) {
+                            // 智能格式化：保留有效小数位（如36.170度保留为36.17）
+                            let formatter = NumberFormatter()
+                            formatter.minimumFractionDigits = 1
+                            formatter.maximumFractionDigits = 3
+                            formatter.numberStyle = .decimal
+                            
+                            if let formatted = formatter.string(from: NSNumber(value: number)) {
+                                electricityKwh = formatted
+                            } else {
+                                electricityKwh = String(format: "%.1f", number)
+                            }
+                            print("✅ 提取到充电电量: \(electricityKwh) kWh")
+                        }
+                    }
+                }
+            }
+            
+            // 3. 提取电费（匹配 "电费" 后面的数字）
             if electricityAmount.isEmpty {
-                let keywords = ["电费", "充电费", "电量费", "电费金额"]
+                let keywords = ["电费", "充电费", "电量费", "电费金额", "电费：", "电费:"]
                 for keyword in keywords {
                     if trimmedLine.contains(keyword) {
                         if let amount = extractNumber(from: trimmedLine) {
                             electricityAmount = String(format: "%.2f", amount)
-                            print("提取到电费: \(electricityAmount)")
+                            print("✅ 提取到电费: ¥\(electricityAmount)")
                             break
                         }
                     }
                 }
             }
             
-            // 提取服务费
+            // 4. 提取服务费
             if serviceFee.isEmpty {
-                if trimmedLine.contains("服务费") {
-                    if let fee = extractNumber(from: trimmedLine) {
-                        serviceFee = String(format: "%.2f", fee)
-                        print("提取到服务费: \(serviceFee)")
+                let serviceKeywords = ["服务费", "服务费：", "服务费:"]
+                for keyword in serviceKeywords {
+                    if trimmedLine.contains(keyword) {
+                        if let fee = extractNumber(from: trimmedLine) {
+                            serviceFee = String(format: "%.2f", fee)
+                            print("✅ 提取到服务费: ¥\(serviceFee)")
+                            break
+                        }
                     }
                 }
             }
             
-            // 提取总金额
+            // 5. 提取实付金额（总金额）
             if totalAmount.isEmpty {
-                let totalKeywords = ["总金额", "实付", "合计", "应付"]
+                // 实付优先，然后是其他总额关键词
+                let totalKeywords = ["实付", "实付金额", "实付：", "实付:", "总金额", "总计", "合计", "应付", "支付金额"]
                 for keyword in totalKeywords {
                     if trimmedLine.contains(keyword) {
                         if let amount = extractNumber(from: trimmedLine) {
                             totalAmount = String(format: "%.2f", amount)
-                            print("提取到总金额: \(totalAmount)")
+                            print("✅ 提取到实付金额: ¥\(totalAmount) (关键词: \(keyword))")
                             break
                         }
                     }
                 }
             }
             
-            // 提取充电站点信息
-            if location.isEmpty {
-                if trimmedLine.contains("特斯拉") || trimmedLine.contains("Tesla") {
-                    location = "特斯拉充电站"
-                    print("识别到站点: \(location)")
-                } else if trimmedLine.contains("小鹏") || trimmedLine.contains("XPENG") {
-                    location = "小鹏充电站"
-                    print("识别到站点: \(location)")
-                } else if trimmedLine.contains("蔚来") || trimmedLine.contains("NIO") {
-                    location = "蔚来换电站"
-                    print("识别到站点: \(location)")
-                } else if trimmedLine.contains("国家电网") || trimmedLine.contains("国网") {
-                    location = "国家电网"
-                    print("识别到站点: \(location)")
+            // 6. 先提取极分抵扣（优先级高，避免与积分混淆）
+            if pointsDiscount.isEmpty && (trimmedLine.contains("极分") || trimmedLine.contains("积分")) && trimmedLine.contains("-") {
+                // 提取抵扣金额
+                if let amount = extractNumber(from: trimmedLine) {
+                    pointsDiscount = String(format: "%.2f", amount)
+                    print("✅ 提取到极分抵扣金额: ¥\(pointsDiscount)")
+                }
+                
+                // 同时提取括号内的积分数字 - 支持多种格式
+                if points.isEmpty {
+                    // 尝试多种括号格式：() 【】 （）
+                    let patterns = [
+                        #"\((\d+)(极分|积分)\)"#,      // (232极分)
+                        #"（(\d+)(极分|积分)）"#,      // （232极分）
+                        #"\[(\d+)(极分|积分)\]"#,      // [232极分]
+                        #"【(\d+)(极分|积分)】"#        // 【232极分】
+                    ]
+                    
+                    for pattern in patterns {
+                        if let match = trimmedLine.range(of: pattern, options: .regularExpression) {
+                            let matchedString = String(trimmedLine[match])
+                            if let number = extractNumber(from: matchedString) {
+                                points = String(format: "%.0f", number)
+                                print("✅ 提取到积分(从抵扣行): \(points) 极分")
+                                break
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 7. 提取普通积分信息（不包含减号的）
+            if points.isEmpty && !trimmedLine.contains("-") {
+                // 匹配 "极分" 或 "积分" 相关的行
+                let pointsKeywords = ["极分", "积分", "Points"]
+                for keyword in pointsKeywords {
+                    if trimmedLine.contains(keyword) {
+                        print("  尝试从行中提取积分: \(trimmedLine)")
+                        
+                        // 尝试多种括号格式
+                        let patterns = [
+                            #"\((\d+)(极分|积分)\)"#,      // (232极分)
+                            #"（(\d+)(极分|积分)）"#,      // （232极分）
+                            #"\[(\d+)(极分|积分)\]"#,      // [232极分]
+                            #"【(\d+)(极分|积分)】"#        // 【232极分】
+                        ]
+                        
+                        var found = false
+                        for pattern in patterns {
+                            if let match = trimmedLine.range(of: pattern, options: .regularExpression) {
+                                let matchedString = String(trimmedLine[match])
+                                if let number = extractNumber(from: matchedString) {
+                                    points = String(format: "%.0f", number)
+                                    print("✅ 提取到积分: \(points) 极分")
+                                    found = true
+                                    break
+                                }
+                            }
+                        }
+                        
+                        // 如果括号格式都不匹配，直接提取行中的数字
+                        if !found, let amount = extractNumber(from: trimmedLine) {
+                            points = String(format: "%.0f", amount)
+                            print("✅ 提取到积分(数字): \(points)")
+                        }
+                        break
+                    }
+                }
+            }
+            
+            // 8. 提取极能抵扣
+            if energyDiscount.isEmpty && trimmedLine.contains("极能抵扣") {
+                energyDiscount = trimmedLine
+                    .replacingOccurrences(of: "极能抵扣", with: "")
+                    .trimmingCharacters(in: .whitespaces)
+                print("✅ 提取到极能抵扣: \(energyDiscount)")
+            }
+            
+            // 9. 提取优惠券
+            if couponDiscount.isEmpty && trimmedLine.contains("优惠券") && trimmedLine.contains("-") {
+                if let amount = extractNumber(from: trimmedLine) {
+                    couponDiscount = String(format: "%.2f", amount)
+                    print("✅ 提取到优惠券: ¥\(couponDiscount)")
+                }
+            }
+            
+            // 10. 提取充电时间
+            if chargingTime == nil {
+                let timeKeywords = ["开始充电时间", "充电时间", "开始时间"]
+                for keyword in timeKeywords {
+                    if trimmedLine.contains(keyword) {
+                        var parsedDate: Date?
+                        
+                        // 尝试匹配完整时间格式：2025-10-03 16:24:08 或 2025年10月3日 16:24:08
+                        let fullPattern = #"(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日\s]+\d{1,2}:\d{1,2}:\d{1,2})"#
+                        if let match = trimmedLine.range(of: fullPattern, options: .regularExpression) {
+                            let timeString = String(trimmedLine[match])
+                                .replacingOccurrences(of: "年", with: "-")
+                                .replacingOccurrences(of: "月", with: "-")
+                                .replacingOccurrences(of: "日", with: "")
+                                .trimmingCharacters(in: .whitespaces)
+                            
+                            let dateFormatter = DateFormatter()
+                            dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                            parsedDate = dateFormatter.date(from: timeString)
+                        }
+                        
+                        // 如果上面没匹配到，尝试匹配无年份格式：10月01日 20:39:32
+                        if parsedDate == nil {
+                            let shortPattern = #"(\d{1,2})月(\d{1,2})日\s+(\d{1,2}):(\d{1,2}):(\d{1,2})"#
+                            if let match = trimmedLine.range(of: shortPattern, options: .regularExpression) {
+                                let matchedString = String(trimmedLine[match])
+                                
+                                // 获取当前年份
+                                let calendar = Calendar.current
+                                let currentYear = calendar.component(.year, from: Date())
+                                
+                                // 重新构建完整时间字符串
+                                let fullTimeString = "\(currentYear)-" + matchedString
+                                    .replacingOccurrences(of: "月", with: "-")
+                                    .replacingOccurrences(of: "日", with: "")
+                                    .trimmingCharacters(in: .whitespaces)
+                                
+                                let dateFormatter = DateFormatter()
+                                dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                                parsedDate = dateFormatter.date(from: fullTimeString)
+                            }
+                        }
+                        
+                        if let date = parsedDate {
+                            chargingTime = date
+                            let formatter = DateFormatter()
+                            formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                            print("✅ 提取到充电时间: \(formatter.string(from: date))")
+                        }
+                        break
+                    }
                 }
             }
         }
         
-        print("提取结果 - 度数:\(electricityKwh) 电费:\(electricityAmount) 服务费:\(serviceFee) 站点:\(location)")
+        // 11. 生成备注（当实付为0或有额外信息时）
+        let totalAmountValue = Double(totalAmount) ?? 0
+        
+        if totalAmountValue == 0.0 || !energyDiscount.isEmpty || !pointsDiscount.isEmpty || !couponDiscount.isEmpty {
+            // 添加极能抵扣信息
+            if !energyDiscount.isEmpty {
+                noteItems.append("极能抵扣: \(energyDiscount)")
+            }
+            
+            // 添加极分抵扣信息
+            if !pointsDiscount.isEmpty {
+                if !points.isEmpty {
+                    noteItems.append("极分抵扣: ¥\(pointsDiscount)(\(points)极分)")
+                } else {
+                    noteItems.append("极分抵扣: ¥\(pointsDiscount)")
+                }
+            }
+            
+            // 添加优惠券信息
+            if !couponDiscount.isEmpty {
+                noteItems.append("优惠券: -¥\(couponDiscount)")
+            }
+        }
+        
+        let notes = noteItems.joined(separator: ", ")
+        
+        // 格式化充电时间用于显示
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        let timeString = chargingTime != nil ? timeFormatter.string(from: chargingTime!) : "未识别"
+        
+        print("📊 提取结果汇总:")
+        print("  - 充电站: \(location.isEmpty ? "未识别" : location)")
+        print("  - 充电电量: \(electricityKwh.isEmpty ? "未识别" : electricityKwh + " kWh")")
+        print("  - 电费: \(electricityAmount.isEmpty ? "未识别" : "¥" + electricityAmount)")
+        print("  - 服务费: \(serviceFee.isEmpty ? "未识别" : "¥" + serviceFee)")
+        print("  - 实付: \(totalAmount.isEmpty ? "未识别" : "¥" + totalAmount)")
+        print("  - 积分: \(points.isEmpty ? "未识别" : points + " 极分")")
+        if !pointsDiscount.isEmpty {
+            print("  - 极分抵扣: ¥\(pointsDiscount)")
+        }
+        if !energyDiscount.isEmpty {
+            print("  - 极能抵扣: \(energyDiscount)")
+        }
+        if !couponDiscount.isEmpty {
+            print("  - 优惠券: -¥\(couponDiscount)")
+        }
+        print("  - 充电时间: \(timeString)")
+        print("  - 备注: \(notes.isEmpty ? "无" : notes)")
         
         // 保存提取的数据
         extractedData = ExtractedChargingData(
             electricityAmount: electricityAmount,
             serviceFee: serviceFee,
             electricityKwh: electricityKwh,
-            location: location
+            location: location,
+            totalAmount: totalAmount,
+            points: points,
+            notes: notes,
+            chargingTime: chargingTime
         )
         
         // 如果识别到了站点，检查是否存在
@@ -460,32 +781,64 @@ struct HomeView: View {
     
     // 从字符串中提取数字
     private func extractNumber(from text: String) -> Double? {
-        // 替换中文符号为英文符号
+        // 替换中文符号和单位，保留空格以分隔数字
         let normalizedText = text
-            .replacingOccurrences(of: "¥", with: "")
-            .replacingOccurrences(of: "￥", with: "")
-            .replacingOccurrences(of: "元", with: "")
-            .replacingOccurrences(of: "：", with: ":")
-            .replacingOccurrences(of: "，", with: ",")
+            .replacingOccurrences(of: "¥", with: " ")
+            .replacingOccurrences(of: "￥", with: " ")
+            .replacingOccurrences(of: "元", with: " ")
+            .replacingOccurrences(of: "：", with: " ")
+            .replacingOccurrences(of: ":", with: " ")
+            .replacingOccurrences(of: "，", with: " ")
+            .replacingOccurrences(of: "kWh", with: " ")
+            .replacingOccurrences(of: "kwh", with: " ")
+            .replacingOccurrences(of: "KWH", with: " ")
+            .replacingOccurrences(of: "度", with: " ")
         
-        // 匹配数字（支持小数）
-        let pattern = #"(\d+\.?\d*)"#
+        // 匹配数字（支持小数点）
+        let pattern = #"\d+\.?\d*"#
         guard let regex = try? NSRegularExpression(pattern: pattern) else {
             return nil
         }
         
         let matches = regex.matches(in: normalizedText, range: NSRange(normalizedText.startIndex..., in: normalizedText))
         
-        // 提取所有数字，返回最大的一个（通常金额是最大的数字）
+        // 提取所有数字
         var numbers: [Double] = []
         for match in matches {
             if let range = Range(match.range, in: normalizedText) {
-                if let number = Double(normalizedText[range]) {
-                    numbers.append(number)
+                let numberString = String(normalizedText[range])
+                if let number = Double(numberString) {
+                    // 只保留合理范围内的数字（排除年份、日期等）
+                    if number > 0 && number < 100000 {
+                        numbers.append(number)
+                        print("    发现数字: \(number)")
+                    }
                 }
             }
         }
         
+        if numbers.isEmpty {
+            return nil
+        }
+        
+        // 如果只有一个数字，直接返回
+        if numbers.count == 1 {
+            return numbers[0]
+        }
+        
+        // 如果有多个数字，优先返回带小数点的数字
+        let decimalNumbers = numbers.filter { $0 != floor($0) }
+        if !decimalNumbers.isEmpty {
+            // 优先选择在合理金额范围内的小数（0.01-10000）
+            let reasonableDecimals = decimalNumbers.filter { $0 >= 0.01 && $0 <= 10000 }
+            if !reasonableDecimals.isEmpty {
+                // 返回最大的合理小数
+                return reasonableDecimals.max()
+            }
+            return decimalNumbers.max()
+        }
+        
+        // 如果都是整数，返回最大的
         return numbers.max()
     }
 }
@@ -496,6 +849,10 @@ struct ExtractedChargingData {
     let serviceFee: String
     let electricityKwh: String
     let location: String
+    let totalAmount: String
+    let points: String
+    let notes: String
+    let chargingTime: Date?
 }
 
 // 可左滑的首页记录行组件

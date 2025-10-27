@@ -21,8 +21,9 @@ final class ChargingRecord {
     var notes: String
     var stationType: String // 充电站类型：特斯拉、小鹏、蔚来、国家电网等
     var recordType: String // 记录类型：充电、换电、维修
+    var points: Double // 积分
     
-    init(location: String, amount: Double, electricityAmount: Double, serviceFee: Double, totalAmount: Double, chargingTime: Date, parkingFee: Double = 0, notes: String = "", stationType: String, recordType: String = "充电") {
+    init(location: String, amount: Double, electricityAmount: Double, serviceFee: Double, totalAmount: Double, chargingTime: Date, parkingFee: Double = 0, notes: String = "", stationType: String, recordType: String = "充电", points: Double = 0) {
         self.id = UUID()
         self.location = location
         self.amount = amount
@@ -34,6 +35,7 @@ final class ChargingRecord {
         self.notes = notes
         self.stationType = stationType
         self.recordType = recordType
+        self.points = points
     }
 }
 

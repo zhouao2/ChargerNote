@@ -210,9 +210,9 @@ struct SettingsView: View {
                                     }
                                 }
                                 
-                                // 充电站点管理
-                                CollapsibleSettingsSection(title: "充电站点管理", isExpanded: $isStationExpanded) {
-                                    SettingsRow(icon: "mappin.and.ellipse", title: "管理充电站点", hasArrow: true, action: {
+                                // 充电站管理
+                                CollapsibleSettingsSection(title: "充电站管理", isExpanded: $isStationExpanded) {
+                                    SettingsRow(icon: "mappin.and.ellipse", title: "管理充电站", hasArrow: true, action: {
                                         showingCategoryManagement = true
                                     })
                                 }
@@ -968,7 +968,7 @@ struct CategoryRow: View {
     }
 }
 
-// 充电站点管理弹窗
+// 充电站管理弹窗
 struct CategoryManagementView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -999,7 +999,7 @@ struct CategoryManagementView: View {
                 }
                 .onMove(perform: moveCategories)
             }
-            .navigationTitle("充电站点管理")
+            .navigationTitle("充电站管理")
             .navigationBarTitleDisplayMode(.inline)
             .environment(\.editMode, $editMode)
             .toolbar {
@@ -1025,7 +1025,7 @@ struct CategoryManagementView: View {
                     }
                 }
             }
-            .alert("删除充电站点", isPresented: $showingDeleteConfirmation) {
+            .alert("删除充电站", isPresented: $showingDeleteConfirmation) {
                 Button("取消", role: .cancel) {
                     categoryToDelete = nil
                 }
@@ -1038,9 +1038,9 @@ struct CategoryManagementView: View {
                 if let category = categoryToDelete {
                     let recordCount = chargingRecords.filter { $0.stationType == category.name }.count
                     if recordCount > 0 {
-                        Text("该站点有 \(recordCount) 条充电记录，删除后这些记录的站点类型将保留。确定要删除吗？")
+                        Text("该充电站有 \(recordCount) 条充电记录，删除后这些记录的站点类型将保留。确定要删除吗？")
                     } else {
-                        Text("确定要删除该充电站点吗？")
+                        Text("确定要删除该充电站吗？")
                     }
                 }
             }
@@ -1106,7 +1106,7 @@ struct AddCategoryView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 24) {
-                TextField("站点名称", text: $categoryName)
+                TextField("充电站名称", text: $categoryName)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.horizontal)
                 
@@ -1165,7 +1165,7 @@ struct AddCategoryView: View {
                 Spacer()
             }
             .padding(.top)
-            .navigationTitle("添加站点")
+            .navigationTitle("添加充电站")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -1198,7 +1198,7 @@ struct AddCategoryView: View {
     }
 }
 
-// 编辑站点视图
+// 编辑充电站视图
 struct EditCategoryView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -1234,7 +1234,7 @@ struct EditCategoryView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 24) {
-                TextField("站点名称", text: $categoryName)
+                TextField("充电站名称", text: $categoryName)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.horizontal)
                 
@@ -1293,7 +1293,7 @@ struct EditCategoryView: View {
                 Spacer()
             }
             .padding(.top)
-            .navigationTitle("编辑站点")
+            .navigationTitle("编辑充电站")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {

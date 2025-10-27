@@ -30,6 +30,7 @@ struct ManualInputView: View {
     @State private var electricityKwh: String = ""
     @State private var chargingTime: Date = Date()
     @State private var parkingFee: String = "0.00"
+    @State private var points: String = "0"
     @State private var notes: String = ""
     @State private var selectedRecordType: String = "充电"
     @State private var currentEditingField: EditingField?
@@ -48,7 +49,7 @@ struct ManualInputView: View {
     }
     
     enum EditingField {
-        case electricityAmount, serviceFee, electricityKwh, parkingFee
+        case electricityAmount, serviceFee, electricityKwh, parkingFee, points
     }
     
     var body: some View {
@@ -74,9 +75,12 @@ struct ManualInputView: View {
                         
                         Spacer()
                         
-                        // 占位，保持居中
-                        Color.clear
-                            .frame(width: 24, height: 24)
+                        // 完成按钮
+                        Button(action: saveRecord) {
+                            Text("完成")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.blue)
+                        }
                     }
                     .padding(.horizontal, 24)
                     .padding(.vertical, 16)
@@ -103,7 +107,7 @@ struct ManualInputView: View {
                                             .font(.system(size: 60, weight: .light))
                                             .foregroundColor(.blue)
                                         
-                                        Text("实付金额")
+                                        Text("实付")
                                             .font(.system(size: 14))
                                             .foregroundColor(.secondary)
                                     }
@@ -139,7 +143,7 @@ struct ManualInputView: View {
                                 }) {
                                     DetailInputRow(
                                         icon: "location",
-                                        title: "充电地点",
+                                        title: "充电站",
                                         value: location.isEmpty ? "请选择" : location,
                                         hasArrow: true
                                     )
@@ -151,7 +155,7 @@ struct ManualInputView: View {
                                 }) {
                                     DetailInputRow(
                                         icon: "bolt",
-                                        title: "充电度数",
+                                        title: "充电电量",
                                         value: electricityKwh.isEmpty ? "0.0 kWh" : "\(electricityKwh) kWh",
                                         hasArrow: false,
                                         isSelected: currentEditingField == .electricityKwh
@@ -164,7 +168,7 @@ struct ManualInputView: View {
                                 }) {
                                     DetailInputRow(
                                         icon: "yensign",
-                                        title: "电费金额",
+                                        title: "电费",
                                         value: electricityAmount.isEmpty ? "\(currencySymbol)0.00" : "\(currencySymbol)\(electricityAmount)",
                                         hasArrow: false,
                                         isSelected: currentEditingField == .electricityAmount
@@ -207,6 +211,19 @@ struct ManualInputView: View {
                                         value: parkingFee.isEmpty ? "\(currencySymbol)0.00" : "\(currencySymbol)\(parkingFee)",
                                         hasArrow: false,
                                         isSelected: currentEditingField == .parkingFee
+                                    )
+                                }
+                                
+                                Button(action: {
+                                    notesFieldFocused = false  // 隐藏备注键盘
+                                    currentEditingField = .points
+                                }) {
+                                    DetailInputRow(
+                                        icon: "star.fill",
+                                        title: "积分",
+                                        value: points.isEmpty || points == "0" ? "0" : points,
+                                        hasArrow: false,
+                                        isSelected: currentEditingField == .points
                                     )
                                 }
                                 
@@ -355,6 +372,7 @@ struct ManualInputView: View {
                 electricityKwh = String(format: "%.1f", record.electricityAmount)
                 chargingTime = record.chargingTime
                 parkingFee = String(format: "%.2f", record.parkingFee)
+                points = String(format: "%.0f", record.points)
                 notes = record.notes
             } else if let data = extractedData {
                 // 加载从图片中提取的数据
@@ -371,6 +389,27 @@ struct ManualInputView: View {
                     location = data.location
                 } else if !categories.isEmpty {
                     location = categories.first?.name ?? ""
+                }
+                // 加载总金额（如果有的话可以覆盖自动计算）
+                if !data.totalAmount.isEmpty && data.totalAmount != "0.00" {
+                    totalAmount = data.totalAmount
+                }
+                // 加载积分（只要不为空就加载）
+                if !data.points.isEmpty {
+                    points = data.points
+                    print("📝 加载积分到输入界面: \(points)")
+                }
+                // 加载备注
+                if !data.notes.isEmpty {
+                    notes = data.notes
+                    print("📝 加载备注到输入界面: \(notes)")
+                }
+                // 加载充电时间
+                if let time = data.chargingTime {
+                    chargingTime = time
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                    print("📝 加载充电时间到输入界面: \(formatter.string(from: time))")
                 }
             } else if location.isEmpty && !categories.isEmpty {
                 // 新建记录，使用第一个分类作为默认值
@@ -397,6 +436,8 @@ struct ManualInputView: View {
             return electricityKwh.isEmpty ? "0.0" : electricityKwh
         case .parkingFee:
             return parkingFee.isEmpty ? "0.00" : parkingFee
+        case .points:
+            return points.isEmpty ? "0" : points
         case .none:
             return "0.00"
         }
@@ -413,6 +454,8 @@ struct ManualInputView: View {
             return "充电度数 (kWh)"
         case .parkingFee:
             return "停车费"
+        case .points:
+            return "积分"
         case .none:
             return ""
         }
@@ -433,6 +476,11 @@ struct ManualInputView: View {
         case .parkingFee:
             if digit == "." && parkingFee.contains(".") { return }
             parkingFee += digit
+        case .points:
+            // 积分不允许小数点
+            if digit != "." {
+                points += digit
+            }
         case .none:
             break
         }
@@ -457,6 +505,10 @@ struct ManualInputView: View {
             if !parkingFee.isEmpty {
                 parkingFee.removeLast()
             }
+        case .points:
+            if !points.isEmpty {
+                points.removeLast()
+            }
         case .none:
             break
         }
@@ -467,6 +519,7 @@ struct ManualInputView: View {
         let service = Double(serviceFee) ?? 0
         let kwh = Double(electricityKwh) ?? 0
         let parking = Double(parkingFee) ?? 0
+        let pointsValue = Double(points) ?? 0
         let total = calculatedTotalAmount // 使用计算的实付金额
         
         if let record = editingRecord {
@@ -478,6 +531,7 @@ struct ManualInputView: View {
             record.totalAmount = total
             record.chargingTime = chargingTime
             record.parkingFee = parking
+            record.points = pointsValue
             record.notes = notes
             record.stationType = getStationType(from: location)
         } else {
@@ -492,7 +546,8 @@ struct ManualInputView: View {
                 parkingFee: parking,
                 notes: notes,
                 stationType: getStationType(from: location),
-                recordType: selectedRecordType
+                recordType: selectedRecordType,
+                points: pointsValue
             )
             modelContext.insert(record)
         }
