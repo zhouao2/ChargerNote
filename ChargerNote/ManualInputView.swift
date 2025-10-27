@@ -30,9 +30,15 @@ struct ManualInputView: View {
     @State private var parkingFee: String = "0.00"
     @State private var notes: String = ""
     @State private var selectedRecordType: String = "充电"
-    @State private var currentEditingField: EditingField = .electricityAmount
+    @State private var currentEditingField: EditingField?
     @State private var showingLocationPicker = false
     @State private var showingDatePicker = false
+    @FocusState private var notesFieldFocused: Bool
+    
+    // 是否显示数字键盘
+    private var shouldShowKeypad: Bool {
+        currentEditingField != nil
+    }
     
     init(editingRecord: ChargingRecord? = nil) {
         self.editingRecord = editingRecord
@@ -124,6 +130,8 @@ struct ManualInputView: View {
                             // 详细信息输入区域
                             VStack(spacing: 0) {
                                 Button(action: {
+                                    notesFieldFocused = false  // 隐藏备注键盘
+                                    currentEditingField = nil  // 隐藏数字键盘
                                     showingLocationPicker = true
                                 }) {
                                     DetailInputRow(
@@ -135,6 +143,7 @@ struct ManualInputView: View {
                                 }
                                 
                                 Button(action: {
+                                    notesFieldFocused = false  // 隐藏备注键盘
                                     currentEditingField = .electricityKwh
                                 }) {
                                     DetailInputRow(
@@ -147,6 +156,7 @@ struct ManualInputView: View {
                                 }
                                 
                                 Button(action: {
+                                    notesFieldFocused = false  // 隐藏备注键盘
                                     currentEditingField = .electricityAmount
                                 }) {
                                     DetailInputRow(
@@ -159,6 +169,7 @@ struct ManualInputView: View {
                                 }
                                 
                                 Button(action: {
+                                    notesFieldFocused = false  // 隐藏备注键盘
                                     currentEditingField = .serviceFee
                                 }) {
                                     DetailInputRow(
@@ -171,6 +182,8 @@ struct ManualInputView: View {
                                 }
                                 
                                 Button(action: {
+                                    notesFieldFocused = false  // 隐藏备注键盘
+                                    currentEditingField = nil  // 隐藏数字键盘
                                     showingDatePicker = true
                                 }) {
                                     DetailInputRow(
@@ -182,6 +195,7 @@ struct ManualInputView: View {
                                 }
                                 
                                 Button(action: {
+                                    notesFieldFocused = false  // 隐藏备注键盘
                                     currentEditingField = .parkingFee
                                 }) {
                                     DetailInputRow(
@@ -193,16 +207,36 @@ struct ManualInputView: View {
                                     )
                                 }
                                 
-                                Button(action: {
-                                    // TODO: 输入备注
-                                }) {
-                                    DetailInputRow(
-                                        icon: "note.text",
-                                        title: "备注",
-                                        value: notes.isEmpty ? "..." : notes,
-                                        hasArrow: true
-                                    )
+                                // 备注输入行
+                                HStack(spacing: 12) {
+                                    // 图标
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .fill(Color.gray.opacity(0.2))
+                                            .frame(width: 24, height: 24)
+                                        
+                                        Image(systemName: "note.text")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.gray)
+                                    }
+                                    
+                                    // 标题
+                                    Text("备注")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.primary)
+                                    
+                                    Spacer()
+                                    
+                                    // 输入框
+                                    TextField("点击输入备注", text: $notes)
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.secondary)
+                                        .multilineTextAlignment(.trailing)
+                                        .focused($notesFieldFocused)
                                 }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(Color.white)
                             }
                             .buttonStyle(PlainButtonStyle())
                             .background(Color.white)
@@ -210,69 +244,94 @@ struct ManualInputView: View {
                         }
                     }
                     
-                    Spacer()
-                    
-                    // 数字键盘
-                    VStack(spacing: 0) {
-                        HStack(spacing: 4) {
-                            // 数字键盘
-                            VStack(spacing: 4) {
-                                HStack(spacing: 4) {
-                                    KeypadButton("7", action: { handleKeypadInput("7") })
-                                    KeypadButton("8", action: { handleKeypadInput("8") })
-                                    KeypadButton("9", action: { handleKeypadInput("9") })
+                    if shouldShowKeypad {
+                        Spacer()
+                        
+                        // 数字键盘
+                        VStack(spacing: 0) {
+                            HStack(spacing: 4) {
+                                // 数字键盘
+                                VStack(spacing: 4) {
+                                    HStack(spacing: 4) {
+                                        KeypadButton("7", action: { handleKeypadInput("7") })
+                                        KeypadButton("8", action: { handleKeypadInput("8") })
+                                        KeypadButton("9", action: { handleKeypadInput("9") })
+                                    }
+                                    
+                                    HStack(spacing: 4) {
+                                        KeypadButton("4", action: { handleKeypadInput("4") })
+                                        KeypadButton("5", action: { handleKeypadInput("5") })
+                                        KeypadButton("6", action: { handleKeypadInput("6") })
+                                    }
+                                    
+                                    HStack(spacing: 4) {
+                                        KeypadButton("1", action: { handleKeypadInput("1") })
+                                        KeypadButton("2", action: { handleKeypadInput("2") })
+                                        KeypadButton("3", action: { handleKeypadInput("3") })
+                                    }
+                                    
+                                    HStack(spacing: 4) {
+                                        KeypadButton(".", action: { handleKeypadInput(".") })
+                                        KeypadButton("0", action: { handleKeypadInput("0") })
+                                        KeypadButton(systemImage: "delete.left", action: handleDelete)
+                                    }
                                 }
+                                .padding(8)
                                 
-                                HStack(spacing: 4) {
-                                    KeypadButton("4", action: { handleKeypadInput("4") })
-                                    KeypadButton("5", action: { handleKeypadInput("5") })
-                                    KeypadButton("6", action: { handleKeypadInput("6") })
-                                }
-                                
-                                HStack(spacing: 4) {
-                                    KeypadButton("1", action: { handleKeypadInput("1") })
-                                    KeypadButton("2", action: { handleKeypadInput("2") })
-                                    KeypadButton("3", action: { handleKeypadInput("3") })
-                                }
-                                
-                                HStack(spacing: 4) {
-                                    KeypadButton(".", action: { handleKeypadInput(".") })
-                                    KeypadButton("0", action: { handleKeypadInput("0") })
-                                    KeypadButton(systemImage: "delete.left", action: handleDelete)
-                                }
-                            }
-                            .padding(8)
-                            
-                            // 右侧操作按钮
-                            VStack(spacing: 8) {
-                                Button(action: saveRecord) {
-                                    Text("确定")
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(.white)
-                                        .frame(maxWidth: .infinity)
-                                        .frame(maxHeight: .infinity)
-                                        .background(
-                                            LinearGradient(
-                                                gradient: Gradient(colors: [Color.orange, Color.orange.opacity(0.8)]),
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
+                                // 右侧操作按钮
+                                VStack(spacing: 4) {
+                                    Button(action: {
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                            currentEditingField = nil  // 隐藏键盘
+                                        }
+                                    }) {
+                                        Text("完成")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(.white)
+                                            .frame(maxWidth: .infinity)
+                                            .frame(maxHeight: .infinity)
+                                            .background(
+                                                LinearGradient(
+                                                    gradient: Gradient(colors: [Color.blue, Color.blue.opacity(0.8)]),
+                                                    startPoint: .topLeading,
+                                                    endPoint: .bottomTrailing
+                                                )
                                             )
-                                        )
-                                        .cornerRadius(8)
+                                            .cornerRadius(8)
+                                    }
+                                    
+                                    Button(action: saveRecord) {
+                                        Text("确定")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(.white)
+                                            .frame(maxWidth: .infinity)
+                                            .frame(maxHeight: .infinity)
+                                            .background(
+                                                LinearGradient(
+                                                    gradient: Gradient(colors: [Color.orange, Color.orange.opacity(0.8)]),
+                                                    startPoint: .topLeading,
+                                                    endPoint: .bottomTrailing
+                                                )
+                                            )
+                                            .cornerRadius(8)
+                                    }
                                 }
+                                .frame(width: 80)
+                                .padding(8)
                             }
-                            .frame(width: 80)
-                            .padding(8)
+                            .frame(height: 240)
                         }
-                        .frame(height: 240)
+                        .background(Color.white)
+                        .overlay(
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(height: 1),
+                            alignment: .top
+                        )
+                        .transition(.move(edge: .bottom))
+                    } else {
+                        Spacer()
                     }
-                    .background(Color.white)
-                    .overlay(
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.2))
-                            .frame(height: 1),
-                        alignment: .top
-                    )
                 }
             }
         }
@@ -319,6 +378,8 @@ struct ManualInputView: View {
             return electricityKwh.isEmpty ? "0.0" : electricityKwh
         case .parkingFee:
             return parkingFee.isEmpty ? "0.00" : parkingFee
+        case .none:
+            return "0.00"
         }
     }
     
@@ -333,6 +394,8 @@ struct ManualInputView: View {
             return "充电度数 (kWh)"
         case .parkingFee:
             return "停车费"
+        case .none:
+            return ""
         }
     }
     
@@ -351,6 +414,8 @@ struct ManualInputView: View {
         case .parkingFee:
             if digit == "." && parkingFee.contains(".") { return }
             parkingFee += digit
+        case .none:
+            break
         }
     }
     
@@ -373,6 +438,8 @@ struct ManualInputView: View {
             if !parkingFee.isEmpty {
                 parkingFee.removeLast()
             }
+        case .none:
+            break
         }
     }
     

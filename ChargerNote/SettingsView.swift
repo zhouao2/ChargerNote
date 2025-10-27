@@ -153,8 +153,8 @@ struct SettingsView: View {
                                 // 应用信息
                                 SettingsSection(title: "应用信息") {
                                     SettingsRow(title: "版本号", value: "1.0.0")
-                                    SettingsRow(title: "构建版本", value: "2024.01.15")
-                                    SettingsRow(title: "开发者", value: "充电记账团队")
+                                    SettingsRow(title: "构建版本", value: "2025.10.25")
+                                    SettingsRow(title: "开发者", value: "Zhou Ao")
                                 }
                             }
                             .padding(.horizontal, 24)

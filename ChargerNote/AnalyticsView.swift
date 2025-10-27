@@ -21,11 +21,6 @@ struct AnalyticsView: View {
         userSettings.first?.currencySymbol ?? "¥"
     }
     
-    enum TimeRange: String, CaseIterable {
-        case month = "月"
-        case quarter = "季"
-        case year = "年"
-    }
     
     // 根据选择的时间范围过滤记录
     private var filteredRecords: [ChargingRecord] {
@@ -138,52 +133,10 @@ struct AnalyticsView: View {
                                 .padding(.top, 24)
                                 
                                 // 趋势图
-                                VStack(spacing: 16) {
-                                    HStack {
-                                        Text("支出趋势")
-                                            .font(.system(size: 18, weight: .semibold))
-                                            .foregroundColor(.primary)
-                                        Spacer()
-                                        Text("最近7天")
-                                            .font(.system(size: 14))
-                                            .foregroundColor(.secondary)
-                                    }
-                                    .padding(.horizontal, 24)
-                                    
-                                    // 简化的柱状图
-                                    HStack(alignment: .bottom, spacing: 8) {
-                                        ForEach(dataManager.getWeeklyExpenseData(filteredRecords), id: \.day) { data in
-                                            VStack(spacing: 8) {
-                                                VStack(spacing: 4) {
-                                                    Text("\(currencySymbol)\(String(format: "%.0f", data.amount))")
-                                                        .font(.system(size: 10, weight: .medium))
-                                                        .foregroundColor(.primary)
-                                                    
-                                                    RoundedRectangle(cornerRadius: 4)
-                                                        .fill(
-                                                            LinearGradient(
-                                                                gradient: Gradient(colors: [Color(red: 0.2, green: 0.78, blue: 0.35), Color(red: 0.19, green: 0.69, blue: 0.31)]),
-                                                                startPoint: .top,
-                                                                endPoint: .bottom
-                                                            )
-                                                        )
-                                                        .frame(width: 24, height: data.height)
-                                                }
-                                                
-                                                Text(data.day)
-                                                    .font(.system(size: 12))
-                                                    .foregroundColor(.secondary)
-                                            }
-                                        }
-                                    }
-                                    .frame(height: 120)
-                                    .padding(.horizontal, 24)
-                                }
-                                .padding(24)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color.white)
-                                        .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+                                TrendChartView(
+                                    dataPoints: dataManager.getTrendData(filteredRecords, timeRange: selectedTimeRange),
+                                    timeRange: selectedTimeRange,
+                                    currencySymbol: currencySymbol
                                 )
                                 .padding(.horizontal, 24)
                                 
@@ -223,7 +176,8 @@ struct AnalyticsView: View {
     
 }
 
-struct ChartData {
+struct ChartData: Identifiable {
+    let id = UUID()
     let day: String
     let height: CGFloat
     let value: Double
@@ -311,6 +265,181 @@ struct LocationDistributionRow: View {
                         .frame(width: 64, height: 8)
                 }
             }
+        }
+    }
+}
+
+// 折线图组件
+struct TrendChartView: View {
+    let dataPoints: [TrendDataPoint]
+    let timeRange: TimeRange
+    let currencySymbol: String
+    
+    private var maxAmount: Double {
+        dataPoints.map { $0.amount }.max() ?? 100
+    }
+    
+    private var displayInterval: Int {
+        switch timeRange {
+        case .month: return 5  // 每5天显示一个标签
+        case .quarter: return 2 // 每2周显示一个标签
+        case .year: return 2    // 每2个月显示一个标签
+        }
+    }
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // 标题
+            HStack {
+                Text("支出趋势")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.primary)
+                Spacer()
+                Text(timeRangeDescription)
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+            }
+            
+            if dataPoints.isEmpty {
+                // 空状态
+                VStack(spacing: 12) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 40))
+                        .foregroundColor(.gray.opacity(0.5))
+                    Text("暂无数据")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
+                .frame(height: 200)
+            } else {
+                // 折线图
+                GeometryReader { geometry in
+                    ZStack(alignment: .topLeading) {
+                        // 背景网格线
+                        VStack(spacing: 0) {
+                            ForEach(0..<5) { i in
+                                HStack {
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.1))
+                                        .frame(height: 1)
+                                }
+                                if i < 4 {
+                                    Spacer()
+                                }
+                            }
+                        }
+                        
+                        // 折线图路径
+                        Path { path in
+                            let chartWidth = geometry.size.width
+                            let chartHeight = geometry.size.height - 40 // 留出底部标签空间
+                            let stepX = chartWidth / CGFloat(max(dataPoints.count - 1, 1))
+                            
+                            for (index, point) in dataPoints.enumerated() {
+                                let x = CGFloat(index) * stepX
+                                let normalizedAmount = maxAmount > 0 ? point.amount / maxAmount : 0
+                                let y = chartHeight * (1 - CGFloat(normalizedAmount))
+                                
+                                if index == 0 {
+                                    path.move(to: CGPoint(x: x, y: y))
+                                } else {
+                                    path.addLine(to: CGPoint(x: x, y: y))
+                                }
+                            }
+                        }
+                        .stroke(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color(red: 0.2, green: 0.78, blue: 0.35), Color(red: 0.19, green: 0.69, blue: 0.31)]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            ),
+                            style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
+                        )
+                        
+                        // 渐变填充
+                        Path { path in
+                            let chartWidth = geometry.size.width
+                            let chartHeight = geometry.size.height - 40
+                            let stepX = chartWidth / CGFloat(max(dataPoints.count - 1, 1))
+                            
+                            for (index, point) in dataPoints.enumerated() {
+                                let x = CGFloat(index) * stepX
+                                let normalizedAmount = maxAmount > 0 ? point.amount / maxAmount : 0
+                                let y = chartHeight * (1 - CGFloat(normalizedAmount))
+                                
+                                if index == 0 {
+                                    path.move(to: CGPoint(x: x, y: chartHeight))
+                                    path.addLine(to: CGPoint(x: x, y: y))
+                                } else {
+                                    path.addLine(to: CGPoint(x: x, y: y))
+                                }
+                            }
+                            
+                            path.addLine(to: CGPoint(x: chartWidth, y: chartHeight))
+                            path.closeSubpath()
+                        }
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color(red: 0.2, green: 0.78, blue: 0.35).opacity(0.3),
+                                    Color(red: 0.19, green: 0.69, blue: 0.31).opacity(0.05)
+                                ]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        
+                        // 数据点
+                        ForEach(Array(dataPoints.enumerated()), id: \.element.id) { index, point in
+                            let chartWidth = geometry.size.width
+                            let chartHeight = geometry.size.height - 40
+                            let stepX = chartWidth / CGFloat(max(dataPoints.count - 1, 1))
+                            let x = CGFloat(index) * stepX
+                            let normalizedAmount = maxAmount > 0 ? point.amount / maxAmount : 0
+                            let y = chartHeight * (1 - CGFloat(normalizedAmount))
+                            
+                            Circle()
+                                .fill(Color.white)
+                                .frame(width: 8, height: 8)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color(red: 0.2, green: 0.78, blue: 0.35), lineWidth: 2)
+                                )
+                                .position(x: x, y: y)
+                        }
+                    }
+                }
+                .frame(height: 200)
+                
+                // X轴标签
+                HStack(alignment: .top, spacing: 0) {
+                    ForEach(Array(dataPoints.enumerated()), id: \.element.id) { index, point in
+                        if index % displayInterval == 0 || index == dataPoints.count - 1 {
+                            Text(point.label)
+                                .font(.system(size: 10))
+                                .foregroundColor(.secondary)
+                                .frame(maxWidth: .infinity)
+                        } else {
+                            Spacer()
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+        )
+    }
+    
+    private var timeRangeDescription: String {
+        switch timeRange {
+        case .month: return "最近30天"
+        case .quarter: return "最近12周"
+        case .year: return "最近12个月"
         }
     }
 }

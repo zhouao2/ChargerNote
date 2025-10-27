@@ -163,31 +163,83 @@ class DataManager {
         }.sorted { $0.totalAmount > $1.totalAmount }
     }
     
-    // 获取最近7天的支出数据
-    func getWeeklyExpenseData(_ records: [ChargingRecord]) -> [DailyExpense] {
+    // 根据时间范围获取趋势数据
+    func getTrendData(_ records: [ChargingRecord], timeRange: TimeRange) -> [TrendDataPoint] {
         let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        var weeklyData: [DailyExpense] = []
+        let now = Date()
+        var trendData: [TrendDataPoint] = []
         
-        for i in 0..<7 {
-            guard let date = calendar.date(byAdding: .day, value: -i, to: today) else { continue }
-            let nextDay = calendar.date(byAdding: .day, value: 1, to: date) ?? date
-            
-            let dayRecords = records.filter { record in
-                record.chargingTime >= date && record.chargingTime < nextDay
+        switch timeRange {
+        case .month:
+            // 显示最近30天，每天一个点
+            for i in (0..<30).reversed() {
+                guard let date = calendar.date(byAdding: .day, value: -i, to: now) else { continue }
+                let nextDay = calendar.date(byAdding: .day, value: 1, to: date) ?? date
+                
+                let dayRecords = records.filter { record in
+                    record.chargingTime >= date && record.chargingTime < nextDay
+                }
+                
+                let totalAmount = dayRecords.reduce(0) { $0 + $1.totalAmount }
+                let label = formatDateLabel(date, format: "M/d")
+                
+                trendData.append(TrendDataPoint(
+                    date: date,
+                    label: label,
+                    amount: totalAmount
+                ))
             }
             
-            let totalAmount = dayRecords.reduce(0) { $0 + $1.totalAmount }
-            let dayName = getDayName(for: date)
+        case .quarter:
+            // 显示最近12周，每周一个点
+            for i in (0..<12).reversed() {
+                guard let weekStart = calendar.date(byAdding: .weekOfYear, value: -i, to: now) else { continue }
+                let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) ?? weekStart
+                
+                let weekRecords = records.filter { record in
+                    record.chargingTime >= weekStart && record.chargingTime < weekEnd
+                }
+                
+                let totalAmount = weekRecords.reduce(0) { $0 + $1.totalAmount }
+                let label = formatDateLabel(weekStart, format: "M/d")
+                
+                trendData.append(TrendDataPoint(
+                    date: weekStart,
+                    label: label,
+                    amount: totalAmount
+                ))
+            }
             
-            weeklyData.append(DailyExpense(
-                day: dayName,
-                amount: totalAmount,
-                height: CGFloat(min(120, max(20, totalAmount * 0.8))) // 动态计算高度
-            ))
+        case .year:
+            // 显示最近12个月，每月一个点
+            for i in (0..<12).reversed() {
+                guard let monthStart = calendar.date(byAdding: .month, value: -i, to: now) else { continue }
+                let monthInterval = calendar.dateInterval(of: .month, for: monthStart)
+                
+                let monthRecords = records.filter { record in
+                    guard let start = monthInterval?.start, let end = monthInterval?.end else { return false }
+                    return record.chargingTime >= start && record.chargingTime < end
+                }
+                
+                let totalAmount = monthRecords.reduce(0) { $0 + $1.totalAmount }
+                let label = formatDateLabel(monthStart, format: "M月")
+                
+                trendData.append(TrendDataPoint(
+                    date: monthStart,
+                    label: label,
+                    amount: totalAmount
+                ))
+            }
         }
         
-        return weeklyData.reversed() // 从周一到周日
+        return trendData
+    }
+    
+    private func formatDateLabel(_ date: Date, format: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = format
+        formatter.locale = Locale(identifier: "zh_CN")
+        return formatter.string(from: date)
     }
     
     private func getColorForStationType(_ stationType: String) -> Color {
@@ -221,10 +273,24 @@ struct LocationStatistics {
     let color: Color
 }
 
-struct DailyExpense {
+struct DailyExpense: Identifiable {
+    let id = UUID()
     let day: String
     let amount: Double
     let height: CGFloat
+}
+
+struct TrendDataPoint: Identifiable {
+    let id = UUID()
+    let date: Date
+    let label: String
+    let amount: Double
+}
+
+enum TimeRange: String, CaseIterable {
+    case month = "月"
+    case quarter = "季"
+    case year = "年"
 }
 
 struct MonthlyStatistics {
