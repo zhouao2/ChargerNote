@@ -226,9 +226,15 @@ struct SwipeableHomeRecordRow: View {
     let onDelete: () -> Void
     
     @State private var offset: CGFloat = 0
+    @State private var dragDirection: DragDirection? = nil
     
     private let actionButtonWidth: CGFloat = 80
     private let swipeThreshold: CGFloat = 50
+    
+    enum DragDirection {
+        case horizontal
+        case vertical
+    }
     
     var body: some View {
         GeometryReader { geometry in
@@ -285,37 +291,62 @@ struct SwipeableHomeRecordRow: View {
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .offset(x: offset)
-                    .gesture(
-                    DragGesture()
-                        .onChanged { gesture in
-                            let translation = gesture.translation.width
-                            if translation < 0 {
-                                // 向左滑动
-                                offset = max(translation, -(actionButtonWidth * 2))
-                            } else if offset < 0 {
-                                // 向右滑动恢复
-                                offset = min(0, offset + translation)
-                            }
-                        }
-                        .onEnded { gesture in
-                            let translation = gesture.translation.width
-                            withAnimation(.spring()) {
-                                if translation < -swipeThreshold && offset > -(actionButtonWidth * 2) {
-                                    // 滑动超过阈值，显示按钮
-                                    offset = -(actionButtonWidth * 2)
-                                } else if translation > swipeThreshold && offset < 0 {
-                                    // 滑动超过阈值，隐藏按钮
-                                    offset = 0
-                                } else if offset < -(actionButtonWidth) {
-                                    // 已经显示，保持显示
-                                    offset = -(actionButtonWidth * 2)
-                                } else {
-                                    // 未达到阈值，恢复原位
-                                    offset = 0
+                    .highPriorityGesture(
+                        DragGesture(minimumDistance: 20)
+                            .onChanged { gesture in
+                                // 判断滑动方向（仅在首次滑动时判断）
+                                if dragDirection == nil {
+                                    let horizontalAmount = abs(gesture.translation.width)
+                                    let verticalAmount = abs(gesture.translation.height)
+                                    
+                                    // 增加判断的严格度：水平位移必须明显大于垂直位移
+                                    if horizontalAmount > verticalAmount * 1.5 {
+                                        dragDirection = .horizontal
+                                    } else {
+                                        dragDirection = .vertical
+                                    }
+                                }
+                                
+                                // 只有在水平方向时才处理左滑
+                                if dragDirection == .horizontal {
+                                    let translation = gesture.translation.width
+                                    if translation < 0 {
+                                        // 向左滑动
+                                        offset = max(translation, -(actionButtonWidth * 2))
+                                    } else if offset < 0 {
+                                        // 向右滑动恢复
+                                        offset = min(0, offset + translation)
+                                    }
                                 }
                             }
-                        }
-                )
+                            .onEnded { gesture in
+                                // 重置方向判断
+                                dragDirection = nil
+                                
+                                // 只有在水平滑动时才处理结束状态
+                                let horizontalAmount = abs(gesture.translation.width)
+                                let verticalAmount = abs(gesture.translation.height)
+                                
+                                if horizontalAmount > verticalAmount * 1.5 {
+                                    let translation = gesture.translation.width
+                                    withAnimation(.spring()) {
+                                        if translation < -swipeThreshold && offset > -(actionButtonWidth * 2) {
+                                            // 滑动超过阈值，显示按钮
+                                            offset = -(actionButtonWidth * 2)
+                                        } else if translation > swipeThreshold && offset < 0 {
+                                            // 滑动超过阈值，隐藏按钮
+                                            offset = 0
+                                        } else if offset < -(actionButtonWidth) {
+                                            // 已经显示，保持显示
+                                            offset = -(actionButtonWidth * 2)
+                                        } else {
+                                            // 未达到阈值，恢复原位
+                                            offset = 0
+                                        }
+                                    }
+                                }
+                            }
+                    )
             }
         }
         .frame(height: 72)

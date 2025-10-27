@@ -170,9 +170,9 @@ class DataManager {
         var trendData: [TrendDataPoint] = []
         
         switch timeRange {
-        case .month:
-            // 显示最近30天，每天一个点
-            for i in (0..<30).reversed() {
+        case .week:
+            // 显示最近7天，每天一个点
+            for i in (0..<7).reversed() {
                 guard let date = calendar.date(byAdding: .day, value: -i, to: now) else { continue }
                 let nextDay = calendar.date(byAdding: .day, value: 1, to: date) ?? date
                 
@@ -181,7 +181,7 @@ class DataManager {
                 }
                 
                 let totalAmount = dayRecords.reduce(0) { $0 + $1.totalAmount }
-                let label = formatDateLabel(date, format: "M/d")
+                let label = formatDateLabel(date, format: "E")  // 周几
                 
                 trendData.append(TrendDataPoint(
                     date: date,
@@ -190,9 +190,9 @@ class DataManager {
                 ))
             }
             
-        case .quarter:
-            // 显示最近12周，每周一个点
-            for i in (0..<12).reversed() {
+        case .month:
+            // 显示最近4周，每周一个点
+            for i in (0..<4).reversed() {
                 guard let weekStart = calendar.date(byAdding: .weekOfYear, value: -i, to: now) else { continue }
                 let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) ?? weekStart
                 
@@ -201,7 +201,7 @@ class DataManager {
                 }
                 
                 let totalAmount = weekRecords.reduce(0) { $0 + $1.totalAmount }
-                let label = formatDateLabel(weekStart, format: "M/d")
+                let label = "第\(4-i)周"
                 
                 trendData.append(TrendDataPoint(
                     date: weekStart,
@@ -288,8 +288,8 @@ struct TrendDataPoint: Identifiable {
 }
 
 enum TimeRange: String, CaseIterable {
+    case week = "周"
     case month = "月"
-    case quarter = "季"
     case year = "年"
 }
 
