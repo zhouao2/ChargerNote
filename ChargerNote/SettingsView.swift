@@ -504,7 +504,7 @@ struct SettingsView: View {
                     "sortOrder": category.sortOrder
                 ]
             },
-            "settings": userSettings.first.map { settings -> [String: Any] in
+            "settings": (userSettings.first.map { settings -> [String: Any] in
                 [
                     "id": settings.id.uuidString,
                     "currencyCode": settings.currencyCode,
@@ -512,7 +512,7 @@ struct SettingsView: View {
                     "currencyName": settings.currencyName,
                     "language": settings.language
                 ]
-            } as Any?
+            }) as Any
         ]
         
         // 序列化为JSON

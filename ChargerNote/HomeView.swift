@@ -281,7 +281,8 @@ struct HomeView: View {
                         totalAmount: data.totalAmount,
                         points: data.points,
                         notes: data.notes,
-                        chargingTime: data.chargingTime
+                        chargingTime: data.chargingTime,
+                        discountAmount: data.discountAmount
                     )
                 }
                 showingManualInput = true
@@ -427,6 +428,26 @@ struct HomeView: View {
         
         let lines = text.components(separatedBy: .newlines)
         
+        // 第一步：提取所有纯金额行（用于后续按顺序匹配）
+        var amountLines: [(index: Int, value: Double)] = []
+        for (index, line) in lines.enumerated() {
+            let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+            // 检测纯金额行（以¥开头、包含-¥、或包含¥符号的行）
+            let hasMoneySymbol = trimmedLine.contains("¥") || trimmedLine.contains("￥")
+            let startsWithMoney = trimmedLine.hasPrefix("¥") || trimmedLine.hasPrefix("-¥") || trimmedLine.hasPrefix("￥") || trimmedLine.hasPrefix("-￥")
+            
+            // 如果包含货币符号，尝试提取金额
+            if hasMoneySymbol || startsWithMoney {
+                if let number = extractNumber(from: trimmedLine) {
+                    // 过滤掉不合理的金额（小于0.01或大于100000）
+                    if number >= 0.01 && number <= 100000 {
+                        amountLines.append((index, number))
+                        print("💰 找到金额行[\(index)]: ¥\(String(format: "%.2f", number)) - \(trimmedLine)")
+                    }
+                }
+            }
+        }
+        
         // 充电站品牌关键词映射
         let stationKeywords: [(keywords: [String], name: String)] = [
             (["特斯拉", "Tesla", "TESLA"], "特斯拉充电站"),
@@ -447,9 +468,68 @@ struct HomeView: View {
         // 充电站后缀关键词（用于识别通用充电站名称）
         let stationSuffixes = ["充电站", "超充站", "极充站", "换电站", "充电桩", "充电点", "服务站"]
         
-        for line in lines {
+        // 记录已使用的金额索引
+        var usedAmountIndices = Set<Int>()
+        
+        // 辅助函数：从金额列表中按顺序查找下一个未使用的金额
+        func findNextAmount(afterKeywordIndex: Int) -> (value: Double, amountIndex: Int)? {
+            // 查找关键词之后、且未被使用的第一个金额
+            for (amountIdx, amountLine) in amountLines.enumerated() {
+                if amountLine.index > afterKeywordIndex && !usedAmountIndices.contains(amountIdx) {
+                    return (amountLine.value, amountIdx)
+                }
+            }
+            return nil
+        }
+        
+        // 辅助函数：从指定索引后的N行内搜索时间
+        func findTimeAfter(index: Int, maxDistance: Int = 15) -> Date? {
+            for i in (index + 1)..<min(index + maxDistance, lines.count) {
+                let line = lines[i].trimmingCharacters(in: .whitespaces)
+                
+                // 完整格式
+                let fullPattern = #"(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日\s]+\d{1,2}:\d{1,2}:\d{1,2})"#
+                if let match = line.range(of: fullPattern, options: .regularExpression) {
+                    let timeString = String(line[match])
+                        .replacingOccurrences(of: "年", with: "-")
+                        .replacingOccurrences(of: "月", with: "-")
+                        .replacingOccurrences(of: "日", with: "")
+                        .trimmingCharacters(in: .whitespaces)
+                    
+                    let dateFormatter = DateFormatter()
+                    dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                    if let date = dateFormatter.date(from: timeString) {
+                        return date
+                    }
+                }
+                
+                // 短格式
+                let shortPattern = #"(\d{1,2})月(\d{1,2})日\s+(\d{1,2}):(\d{1,2}):(\d{1,2})"#
+                if let match = line.range(of: shortPattern, options: .regularExpression) {
+                    let matchedString = String(line[match])
+                    let calendar = Calendar.current
+                    let currentYear = calendar.component(.year, from: Date())
+                    let fullTimeString = "\(currentYear)-" + matchedString
+                        .replacingOccurrences(of: "月", with: "-")
+                        .replacingOccurrences(of: "日", with: "")
+                        .trimmingCharacters(in: .whitespaces)
+                    
+                    let dateFormatter = DateFormatter()
+                    dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                    if let date = dateFormatter.date(from: fullTimeString) {
+                        return date
+                    }
+                }
+            }
+            return nil
+        }
+        
+        for (index, line) in lines.enumerated() {
             let trimmedLine = line.trimmingCharacters(in: .whitespaces)
             print("处理行: \(trimmedLine)")
+            
+            // 获取下一行（用于跨行匹配）
+            let nextLine = index + 1 < lines.count ? lines[index + 1].trimmingCharacters(in: .whitespaces) : ""
             
             // 1. 优先提取充电站名称
             if location.isEmpty {
@@ -483,6 +563,33 @@ struct HomeView: View {
                         }
                     }
                 }
+                
+                // 1.3 如果仍未找到，尝试基于上下文识别（在"已支付"后、"费用明细"前的可能是站点名称）
+                if !foundBrand && location.isEmpty && index > 0 {
+                    // 检查前一行是否包含订单状态关键词
+                    let previousLine = lines[index - 1].trimmingCharacters(in: .whitespaces)
+                    let statusKeywords = ["已支付", "已完成", "充电中", "充电完成"]
+                    let detailKeywords = ["费用明细", "订单信息", "电费", "服务费"]
+                    
+                    let hasPreviousStatus = statusKeywords.contains(where: { previousLine.contains($0) })
+                    let hasNextDetail = detailKeywords.contains(where: { nextLine.contains($0) })
+                    
+                    if hasPreviousStatus || hasNextDetail {
+                        // 这行文字可能是站点名称
+                        let cleanedLine = trimmedLine
+                            .replacingOccurrences(of: "：", with: "")
+                            .replacingOccurrences(of: ":", with: "")
+                            .trimmingCharacters(in: .whitespaces)
+                        
+                        // 长度合理且不包含特殊关键词
+                        if cleanedLine.count >= 3 && cleanedLine.count <= 30 &&
+                           !detailKeywords.contains(where: { cleanedLine.contains($0) }) &&
+                           !statusKeywords.contains(where: { cleanedLine.contains($0) }) {
+                            location = cleanedLine
+                            print("✅ 识别到充电站(上下文): \(location)")
+                        }
+                    }
+                }
             }
             
             // 2. 提取充电电量（匹配 "XX.X kWh" 或 "XX.X度"）
@@ -512,50 +619,120 @@ struct HomeView: View {
                 }
             }
             
-            // 3. 提取电费（匹配 "电费" 后面的数字）
+            // 3. 提取电费（按顺序匹配金额）
             if electricityAmount.isEmpty {
                 let keywords = ["电费", "充电费", "电量费", "电费金额", "电费：", "电费:"]
                 for keyword in keywords {
                     if trimmedLine.contains(keyword) {
+                        // 先尝试从当前行提取
                         if let amount = extractNumber(from: trimmedLine) {
                             electricityAmount = String(format: "%.2f", amount)
-                            print("✅ 提取到电费: ¥\(electricityAmount)")
+                            print("✅ 提取到电费(当前行): ¥\(electricityAmount)")
+                            break
+                        }
+                        // 从金额列表中按顺序查找
+                        else if let result = findNextAmount(afterKeywordIndex: index) {
+                            electricityAmount = String(format: "%.2f", result.value)
+                            usedAmountIndices.insert(result.amountIndex)
+                            print("✅ 提取到电费(顺序匹配): ¥\(electricityAmount)")
                             break
                         }
                     }
                 }
             }
             
-            // 4. 提取服务费
+            // 4. 提取服务费（按顺序匹配金额）
             if serviceFee.isEmpty {
                 let serviceKeywords = ["服务费", "服务费：", "服务费:"]
                 for keyword in serviceKeywords {
                     if trimmedLine.contains(keyword) {
+                        // 先尝试从当前行提取
                         if let fee = extractNumber(from: trimmedLine) {
                             serviceFee = String(format: "%.2f", fee)
-                            print("✅ 提取到服务费: ¥\(serviceFee)")
+                            print("✅ 提取到服务费(当前行): ¥\(serviceFee)")
+                            break
+                        }
+                        // 从金额列表中按顺序查找
+                        else if let result = findNextAmount(afterKeywordIndex: index) {
+                            serviceFee = String(format: "%.2f", result.value)
+                            usedAmountIndices.insert(result.amountIndex)
+                            print("✅ 提取到服务费(顺序匹配): ¥\(serviceFee)")
                             break
                         }
                     }
                 }
             }
             
-            // 5. 提取实付金额（总金额）
+            // 5. 识别"总计"并标记金额为已使用（避免被其他字段错误匹配）
+            if trimmedLine.contains("总计") || trimmedLine.contains("合计") || trimmedLine.contains("总金额") {
+                print("🔍 发现总计关键词: \(trimmedLine)")
+                // 尝试从当前行或后续行找到对应的金额，并标记为已使用
+                if let amount = extractNumber(from: trimmedLine) {
+                    // 在 amountLines 中找到这个金额并标记
+                    for (idx, amountLine) in amountLines.enumerated() {
+                        if abs(amountLine.value - amount) < 0.01 && !usedAmountIndices.contains(idx) {
+                            usedAmountIndices.insert(idx)
+                            print("🚫 标记总计金额为已使用: ¥\(String(format: "%.2f", amount))")
+                            break
+                        }
+                    }
+                } else if let result = findNextAmount(afterKeywordIndex: index) {
+                    usedAmountIndices.insert(result.amountIndex)
+                    print("🚫 标记总计金额为已使用(顺序匹配): ¥\(String(format: "%.2f", result.value))")
+                }
+            }
+            
+            // 6. 提取实付金额（智能搜索）
             if totalAmount.isEmpty {
-                // 实付优先，然后是其他总额关键词
-                let totalKeywords = ["实付", "实付金额", "实付：", "实付:", "总金额", "总计", "合计", "应付", "支付金额"]
-                for keyword in totalKeywords {
+                // 优先识别"实付"（最终支付金额），避免识别到"总计"
+                let primaryKeywords = ["实付", "实付金额", "实付金额：", "实付：", "实付:"]
+                var found = false
+                
+                // 首先尝试识别"实付"
+                for keyword in primaryKeywords {
                     if trimmedLine.contains(keyword) {
+                        // 先尝试从当前行提取
                         if let amount = extractNumber(from: trimmedLine) {
                             totalAmount = String(format: "%.2f", amount)
-                            print("✅ 提取到实付金额: ¥\(totalAmount) (关键词: \(keyword))")
+                            print("✅ 提取到实付金额(当前行): ¥\(totalAmount) (关键词: \(keyword))")
+                            found = true
                             break
+                        }
+                        // 从金额列表中按顺序查找
+                        else if let result = findNextAmount(afterKeywordIndex: index) {
+                            totalAmount = String(format: "%.2f", result.value)
+                            usedAmountIndices.insert(result.amountIndex)
+                            print("✅ 提取到实付金额(顺序匹配): ¥\(totalAmount) (关键词: \(keyword))")
+                            found = true
+                            break
+                        }
+                    }
+                }
+                
+                // 如果没有找到"实付"，再尝试其他关键词作为备选
+                if !found {
+                    let fallbackKeywords = ["订单总金额", "总金额", "合计", "应付", "支付金额"]
+                    for keyword in fallbackKeywords {
+                        if trimmedLine.contains(keyword) {
+                            // 先尝试从当前行提取
+                            if let amount = extractNumber(from: trimmedLine) {
+                                totalAmount = String(format: "%.2f", amount)
+                                print("✅ 提取到实付金额(当前行-备选): ¥\(totalAmount) (关键词: \(keyword))")
+                                break
+                            }
+                            // 从金额列表中按顺序查找
+                            else if let result = findNextAmount(afterKeywordIndex: index) {
+                                totalAmount = String(format: "%.2f", result.value)
+                                usedAmountIndices.insert(result.amountIndex)
+                                print("✅ 提取到实付金额(顺序匹配-备选): ¥\(totalAmount) (关键词: \(keyword))")
+                                break
+                            }
                         }
                     }
                 }
             }
             
-            // 6. 先提取极分抵扣（优先级高，避免与积分混淆）
+            // 7. 先提取极分抵扣（优先级高，避免与积分混淆）
             if pointsDiscount.isEmpty && (trimmedLine.contains("极分") || trimmedLine.contains("积分")) && trimmedLine.contains("-") {
                 // 提取抵扣金额
                 if let amount = extractNumber(from: trimmedLine) {
@@ -633,62 +810,70 @@ struct HomeView: View {
                 print("✅ 提取到极能抵扣: \(energyDiscount)")
             }
             
-            // 9. 提取优惠券
-            if couponDiscount.isEmpty && trimmedLine.contains("优惠券") && trimmedLine.contains("-") {
-                if let amount = extractNumber(from: trimmedLine) {
-                    couponDiscount = String(format: "%.2f", amount)
-                    print("✅ 提取到优惠券: ¥\(couponDiscount)")
+            // 9. 提取优惠券（特殊处理：优先搜索包含-¥的行）
+            if couponDiscount.isEmpty {
+                let couponKeywords = ["优惠券", "优惠券：", "优惠券:"]
+                for keyword in couponKeywords {
+                    if trimmedLine.contains(keyword) {
+                        print("🎫 发现优惠券关键词: \(keyword)")
+                        // 先尝试从当前行提取
+                        if let amount = extractNumber(from: trimmedLine) {
+                            couponDiscount = String(format: "%.2f", amount)
+                            print("✅ 提取到优惠券(当前行): ¥\(couponDiscount)")
+                            break
+                        }
+                        // 特殊处理：在后续10行内搜索包含-¥的行（优惠金额通常显示为负数）
+                        var foundDiscount = false
+                        for searchIndex in (index + 1)..<min(index + 10, lines.count) {
+                            let searchLine = lines[searchIndex].trimmingCharacters(in: .whitespaces)
+                            if searchLine.contains("-¥") || searchLine.contains("-￥") {
+                                if let amount = extractNumber(from: searchLine) {
+                                    couponDiscount = String(format: "%.2f", amount)
+                                    print("✅ 提取到优惠券(负数搜索): ¥\(couponDiscount) (行内容: \(searchLine))")
+                                    foundDiscount = true
+                                    break
+                                }
+                            }
+                        }
+                        // 如果没找到负数，再尝试从金额列表中按顺序查找
+                        if !foundDiscount {
+                            if let result = findNextAmount(afterKeywordIndex: index) {
+                                couponDiscount = String(format: "%.2f", result.value)
+                                usedAmountIndices.insert(result.amountIndex)
+                                print("✅ 提取到优惠券(顺序匹配): ¥\(couponDiscount)")
+                            }
+                        }
+                        break
+                    }
                 }
             }
             
-            // 10. 提取充电时间
+            // 9.1 补充：如果还没找到优惠券，但发现了包含-¥和数字的行，尝试提取
+            if couponDiscount.isEmpty && (trimmedLine.contains("-¥") || trimmedLine.contains("-￥")) {
+                // 排除已经识别过的极分抵扣和极能抵扣
+                if !trimmedLine.contains("极分") && !trimmedLine.contains("积分") && !trimmedLine.contains("极能") {
+                    if let amount = extractNumber(from: trimmedLine) {
+                        couponDiscount = String(format: "%.2f", amount)
+                        print("✅ 提取到优惠券(独立负数行): ¥\(couponDiscount) (行内容: \(trimmedLine))")
+                    }
+                }
+            }
+            
+            // 10. 提取充电时间（智能搜索）
             if chargingTime == nil {
                 let timeKeywords = ["开始充电时间", "充电时间", "开始时间"]
                 for keyword in timeKeywords {
                     if trimmedLine.contains(keyword) {
-                        var parsedDate: Date?
+                        print("🕐 发现时间关键词: \(keyword) 在行: \(trimmedLine)")
                         
-                        // 尝试匹配完整时间格式：2025-10-03 16:24:08 或 2025年10月3日 16:24:08
-                        let fullPattern = #"(\d{4}[-年]\d{1,2}[-月]\d{1,2}[日\s]+\d{1,2}:\d{1,2}:\d{1,2})"#
-                        if let match = trimmedLine.range(of: fullPattern, options: .regularExpression) {
-                            let timeString = String(trimmedLine[match])
-                                .replacingOccurrences(of: "年", with: "-")
-                                .replacingOccurrences(of: "月", with: "-")
-                                .replacingOccurrences(of: "日", with: "")
-                                .trimmingCharacters(in: .whitespaces)
-                            
-                            let dateFormatter = DateFormatter()
-                            dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-                            parsedDate = dateFormatter.date(from: timeString)
-                        }
-                        
-                        // 如果上面没匹配到，尝试匹配无年份格式：10月01日 20:39:32
-                        if parsedDate == nil {
-                            let shortPattern = #"(\d{1,2})月(\d{1,2})日\s+(\d{1,2}):(\d{1,2}):(\d{1,2})"#
-                            if let match = trimmedLine.range(of: shortPattern, options: .regularExpression) {
-                                let matchedString = String(trimmedLine[match])
-                                
-                                // 获取当前年份
-                                let calendar = Calendar.current
-                                let currentYear = calendar.component(.year, from: Date())
-                                
-                                // 重新构建完整时间字符串
-                                let fullTimeString = "\(currentYear)-" + matchedString
-                                    .replacingOccurrences(of: "月", with: "-")
-                                    .replacingOccurrences(of: "日", with: "")
-                                    .trimmingCharacters(in: .whitespaces)
-                                
-                                let dateFormatter = DateFormatter()
-                                dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-                                parsedDate = dateFormatter.date(from: fullTimeString)
-                            }
-                        }
-                        
-                        if let date = parsedDate {
+                        // 使用辅助函数智能搜索后续行
+                        if let date = findTimeAfter(index: index, maxDistance: 15) {
                             chargingTime = date
                             let formatter = DateFormatter()
                             formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-                            print("✅ 提取到充电时间: \(formatter.string(from: date))")
+                            print("✅ 提取到充电时间(智能搜索): \(formatter.string(from: date))")
+                        } else {
+                            print("❌ 充电时间解析失败")
                         }
                         break
                     }
@@ -746,6 +931,39 @@ struct HomeView: View {
         print("  - 充电时间: \(timeString)")
         print("  - 备注: \(notes.isEmpty ? "无" : notes)")
         
+        // 明确显示 chargingTime 状态
+        if chargingTime != nil {
+            print("🔔 chargingTime 不为 nil，将被传递到 ManualInputView")
+        } else {
+            print("⚠️ chargingTime 为 nil，ManualInputView 将使用默认当前时间")
+        }
+        
+        // 计算总优惠金额（优惠券 + 极分抵扣 + 极能抵扣中的金额）
+        var totalDiscount: Double = 0.0
+        
+        // 1. 优惠券金额
+        if let couponAmount = Double(couponDiscount) {
+            totalDiscount += couponAmount
+        }
+        
+        // 2. 极分抵扣金额
+        if let pointsDiscountAmount = Double(pointsDiscount) {
+            totalDiscount += pointsDiscountAmount
+        }
+        
+        // 3. 极能抵扣中的金额部分（如果有）
+        if !energyDiscount.isEmpty {
+            // 尝试从极能抵扣字符串中提取金额，例如 "29.797度(¥ 41.33)"
+            if let amount = extractNumber(from: energyDiscount) {
+                totalDiscount += amount
+            }
+        }
+        
+        let discountAmountString = totalDiscount > 0 ? String(format: "%.2f", totalDiscount) : ""
+        if !discountAmountString.isEmpty {
+            print("  - 总优惠金额: ¥\(discountAmountString)")
+        }
+        
         // 保存提取的数据
         extractedData = ExtractedChargingData(
             electricityAmount: electricityAmount,
@@ -755,8 +973,11 @@ struct HomeView: View {
             totalAmount: totalAmount,
             points: points,
             notes: notes,
-            chargingTime: chargingTime
+            chargingTime: chargingTime,
+            discountAmount: discountAmountString
         )
+        
+        print("✅ ExtractedChargingData 已创建并保存")
         
         // 如果识别到了站点，检查是否存在
         if !location.isEmpty {
@@ -783,6 +1004,7 @@ struct HomeView: View {
     private func extractNumber(from text: String) -> Double? {
         // 替换中文符号和单位，保留空格以分隔数字
         let normalizedText = text
+            .replacingOccurrences(of: "-", with: " ") // 移除负号，因为我们需要的是绝对值
             .replacingOccurrences(of: "¥", with: " ")
             .replacingOccurrences(of: "￥", with: " ")
             .replacingOccurrences(of: "元", with: " ")
@@ -853,6 +1075,7 @@ struct ExtractedChargingData {
     let points: String
     let notes: String
     let chargingTime: Date?
+    let discountAmount: String // 优惠金额
 }
 
 // 可左滑的首页记录行组件

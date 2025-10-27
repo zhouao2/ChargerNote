@@ -30,6 +30,7 @@ struct ManualInputView: View {
     @State private var electricityKwh: String = ""
     @State private var chargingTime: Date = Date()
     @State private var parkingFee: String = "0.00"
+    @State private var discountAmount: String = "0.00"
     @State private var points: String = "0"
     @State private var notes: String = ""
     @State private var selectedRecordType: String = "充电"
@@ -49,7 +50,7 @@ struct ManualInputView: View {
     }
     
     enum EditingField {
-        case electricityAmount, serviceFee, electricityKwh, parkingFee, points
+        case electricityAmount, serviceFee, electricityKwh, parkingFee, discountAmount, points
     }
     
     var body: some View {
@@ -185,6 +186,19 @@ struct ManualInputView: View {
                                         value: serviceFee.isEmpty ? "\(currencySymbol)0.00" : "\(currencySymbol)\(serviceFee)",
                                         hasArrow: false,
                                         isSelected: currentEditingField == .serviceFee
+                                    )
+                                }
+                                
+                                Button(action: {
+                                    notesFieldFocused = false  // 隐藏备注键盘
+                                    currentEditingField = .discountAmount
+                                }) {
+                                    DetailInputRow(
+                                        icon: "tag.fill",
+                                        title: "优惠金额",
+                                        value: discountAmount.isEmpty ? "\(currencySymbol)0.00" : "\(currencySymbol)\(discountAmount)",
+                                        hasArrow: false,
+                                        isSelected: currentEditingField == .discountAmount
                                     )
                                 }
                                 
@@ -363,6 +377,8 @@ struct ManualInputView: View {
             DatePickerView(selectedDate: $chargingTime)
         }
         .onAppear {
+            print("🔍 ManualInputView onAppear - editingRecord: \(editingRecord != nil), extractedData: \(extractedData != nil)")
+            
             if let record = editingRecord {
                 // 加载编辑数据
                 totalAmount = String(format: "%.2f", record.totalAmount)
@@ -372,9 +388,11 @@ struct ManualInputView: View {
                 electricityKwh = String(format: "%.1f", record.electricityAmount)
                 chargingTime = record.chargingTime
                 parkingFee = String(format: "%.2f", record.parkingFee)
+                discountAmount = String(format: "%.2f", record.discountAmount)
                 points = String(format: "%.0f", record.points)
                 notes = record.notes
             } else if let data = extractedData {
+                print("📥 开始加载 extractedData")
                 // 加载从图片中提取的数据
                 if !data.electricityAmount.isEmpty {
                     electricityAmount = data.electricityAmount
@@ -394,6 +412,11 @@ struct ManualInputView: View {
                 if !data.totalAmount.isEmpty && data.totalAmount != "0.00" {
                     totalAmount = data.totalAmount
                 }
+                // 加载优惠金额
+                if !data.discountAmount.isEmpty {
+                    discountAmount = data.discountAmount
+                    print("📝 加载优惠金额到输入界面: \(discountAmount)")
+                }
                 // 加载积分（只要不为空就加载）
                 if !data.points.isEmpty {
                     points = data.points
@@ -405,11 +428,14 @@ struct ManualInputView: View {
                     print("📝 加载备注到输入界面: \(notes)")
                 }
                 // 加载充电时间
+                print("🔍 检查 chargingTime: \(data.chargingTime != nil)")
                 if let time = data.chargingTime {
                     chargingTime = time
                     let formatter = DateFormatter()
                     formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-                    print("📝 加载充电时间到输入界面: \(formatter.string(from: time))")
+                    print("✅ 成功加载充电时间到输入界面: \(formatter.string(from: time))")
+                } else {
+                    print("⚠️ extractedData.chargingTime 为 nil，使用默认当前时间")
                 }
             } else if location.isEmpty && !categories.isEmpty {
                 // 新建记录，使用第一个分类作为默认值
@@ -422,7 +448,8 @@ struct ManualInputView: View {
     private var calculatedTotalAmount: Double {
         let electricity = Double(electricityAmount) ?? 0
         let service = Double(serviceFee) ?? 0
-        return electricity + service
+        let discount = Double(discountAmount) ?? 0
+        return max(0, electricity + service - discount) // 确保不为负数
     }
     
     // 计算属性：显示金额
@@ -436,6 +463,8 @@ struct ManualInputView: View {
             return electricityKwh.isEmpty ? "0.0" : electricityKwh
         case .parkingFee:
             return parkingFee.isEmpty ? "0.00" : parkingFee
+        case .discountAmount:
+            return discountAmount.isEmpty ? "0.00" : discountAmount
         case .points:
             return points.isEmpty ? "0" : points
         case .none:
@@ -454,6 +483,8 @@ struct ManualInputView: View {
             return "充电度数 (kWh)"
         case .parkingFee:
             return "停车费"
+        case .discountAmount:
+            return "优惠金额"
         case .points:
             return "积分"
         case .none:
@@ -476,6 +507,9 @@ struct ManualInputView: View {
         case .parkingFee:
             if digit == "." && parkingFee.contains(".") { return }
             parkingFee += digit
+        case .discountAmount:
+            if digit == "." && discountAmount.contains(".") { return }
+            discountAmount += digit
         case .points:
             // 积分不允许小数点
             if digit != "." {
@@ -505,6 +539,10 @@ struct ManualInputView: View {
             if !parkingFee.isEmpty {
                 parkingFee.removeLast()
             }
+        case .discountAmount:
+            if !discountAmount.isEmpty {
+                discountAmount.removeLast()
+            }
         case .points:
             if !points.isEmpty {
                 points.removeLast()
@@ -519,6 +557,7 @@ struct ManualInputView: View {
         let service = Double(serviceFee) ?? 0
         let kwh = Double(electricityKwh) ?? 0
         let parking = Double(parkingFee) ?? 0
+        let discount = Double(discountAmount) ?? 0
         let pointsValue = Double(points) ?? 0
         let total = calculatedTotalAmount // 使用计算的实付金额
         
@@ -531,6 +570,7 @@ struct ManualInputView: View {
             record.totalAmount = total
             record.chargingTime = chargingTime
             record.parkingFee = parking
+            record.discountAmount = discount
             record.points = pointsValue
             record.notes = notes
             record.stationType = getStationType(from: location)
@@ -547,7 +587,8 @@ struct ManualInputView: View {
                 notes: notes,
                 stationType: getStationType(from: location),
                 recordType: selectedRecordType,
-                points: pointsValue
+                points: pointsValue,
+                discountAmount: discount
             )
             modelContext.insert(record)
         }
