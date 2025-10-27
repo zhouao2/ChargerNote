@@ -64,12 +64,14 @@ final class UserSettings {
     var currencyCode: String // "CNY", "USD", "EUR"
     var currencySymbol: String // "¥", "$", "€"
     var currencyName: String // "人民币 (¥)", "美元 ($)", "欧元 (€)"
+    var language: String // "zh-Hans", "en"
     
-    init(currencyCode: String = "CNY", currencySymbol: String = "¥", currencyName: String = "人民币 (¥)") {
+    init(currencyCode: String = "CNY", currencySymbol: String = "¥", currencyName: String = "人民币 (¥)", language: String = "zh-Hans") {
         self.id = UUID()
         self.currencyCode = currencyCode
         self.currencySymbol = currencySymbol
         self.currencyName = currencyName
+        self.language = language
     }
 }
 

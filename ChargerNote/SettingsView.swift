@@ -18,12 +18,14 @@ struct SettingsView: View {
     @Query private var categories: [ChargingStationCategory]
     @Query private var userSettings: [UserSettings]
     @State private var selectedCurrency: Currency = .cny
+    @State private var selectedLanguage: Language = .chinese
     @State private var showingAddCategory = false
     @State private var editingCategory: ChargingStationCategory?
     @State private var showingCategoryManagement = false
     
     // 折叠状态
     @State private var isAppearanceExpanded = false
+    @State private var isLanguageExpanded = false
     @State private var isCurrencyExpanded = false
     @State private var isStationExpanded = false
     @State private var isDataExpanded = false
@@ -44,6 +46,9 @@ struct SettingsView: View {
     
     // 删除确认弹窗
     @State private var showingDeleteAlert = false
+    
+    // 语言切换提示
+    @State private var showingLanguageAlert = false
     
     enum Currency: String, CaseIterable {
         case cny = "人民币 (¥)"
@@ -71,6 +76,25 @@ struct SettingsView: View {
             case .cny: return "CNY"
             case .usd: return "USD"
             case .eur: return "EUR"
+            }
+        }
+    }
+    
+    enum Language: String, CaseIterable {
+        case chinese = "中文"
+        case english = "English"
+        
+        var icon: String {
+            switch self {
+            case .chinese: return "character.textbox"
+            case .english: return "textformat.abc"
+            }
+        }
+        
+        var code: String {
+            switch self {
+            case .chinese: return "zh-Hans"
+            case .english: return "en"
             }
         }
     }
@@ -151,6 +175,21 @@ struct SettingsView: View {
                                             hasCheckmark: themeManager.currentTheme == theme,
                                             action: {
                                                 themeManager.currentTheme = theme
+                                            }
+                                        )
+                                    }
+                                }
+                                
+                                // 语言设置
+                                CollapsibleSettingsSection(title: "语言 / Language", isExpanded: $isLanguageExpanded) {
+                                    ForEach(Language.allCases, id: \.self) { language in
+                                        SettingsRow(
+                                            icon: language.icon,
+                                            title: language.rawValue,
+                                            hasCheckmark: selectedLanguage == language,
+                                            action: {
+                                                selectedLanguage = language
+                                                updateLanguageSettings(language)
                                             }
                                         )
                                     }
@@ -279,6 +318,11 @@ struct SettingsView: View {
         } message: {
             Text("此操作将永久删除所有充电记录，此操作不可撤销。确定要继续吗？")
         }
+        .alert("语言已更改 / Language Changed", isPresented: $showingLanguageAlert) {
+            Button("确定 / OK", role: .cancel) { }
+        } message: {
+            Text("请重启应用以应用新的语言设置\nPlease restart the app to apply the new language settings")
+        }
         .onAppear {
             if categories.isEmpty {
                 createDefaultCategories()
@@ -302,6 +346,16 @@ struct SettingsView: View {
                 default:
                     selectedCurrency = .cny
                 }
+                
+                // 加载当前语言设置
+                switch settings.language {
+                case "zh-Hans":
+                    selectedLanguage = .chinese
+                case "en":
+                    selectedLanguage = .english
+                default:
+                    selectedLanguage = .chinese
+                }
             }
         }
     }
@@ -319,6 +373,22 @@ struct SettingsView: View {
             )
             modelContext.insert(newSettings)
         }
+    }
+    
+    private func updateLanguageSettings(_ language: Language) {
+        if let settings = userSettings.first {
+            settings.language = language.code
+        } else {
+            let newSettings = UserSettings(language: language.code)
+            modelContext.insert(newSettings)
+        }
+        
+        // 更新系统语言偏好
+        UserDefaults.standard.set([language.code], forKey: "AppleLanguages")
+        UserDefaults.standard.synchronize()
+        
+        // 显示提示
+        showingLanguageAlert = true
     }
     
     private func createDefaultCategories() {
@@ -439,7 +509,8 @@ struct SettingsView: View {
                     "id": settings.id.uuidString,
                     "currencyCode": settings.currencyCode,
                     "currencySymbol": settings.currencySymbol,
-                    "currencyName": settings.currencyName
+                    "currencyName": settings.currencyName,
+                    "language": settings.language
                 ]
             } as Any?
         ]
@@ -585,11 +656,13 @@ struct SettingsView: View {
                 if let currencyCode = settingsData["currencyCode"] as? String,
                    let currencySymbol = settingsData["currencySymbol"] as? String,
                    let currencyName = settingsData["currencyName"] as? String {
+                    let language = settingsData["language"] as? String ?? "zh-Hans" // 默认中文
                     if userSettings.isEmpty {
                         let newSettings = UserSettings(
                             currencyCode: currencyCode,
                             currencySymbol: currencySymbol,
-                            currencyName: currencyName
+                            currencyName: currencyName,
+                            language: language
                         )
                         modelContext.insert(newSettings)
                     } else {
@@ -597,6 +670,7 @@ struct SettingsView: View {
                         settings.currencyCode = currencyCode
                         settings.currencySymbol = currencySymbol
                         settings.currencyName = currencyName
+                        settings.language = language
                     }
                 }
             } else {

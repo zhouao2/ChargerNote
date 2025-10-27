@@ -13,7 +13,7 @@ struct ManualInputView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
-    @Query private var categories: [ChargingStationCategory]
+    @Query(sort: \ChargingStationCategory.sortOrder) private var categories: [ChargingStationCategory]
     @Query private var userSettings: [UserSettings]
     
     let editingRecord: ChargingRecord?
@@ -78,7 +78,7 @@ struct ManualInputView: View {
                     }
                     .padding(.horizontal, 24)
                     .padding(.vertical, 16)
-                    .background(Color.white)
+                    .background(Color.cardBackground(for: colorScheme))
                     
                     // 充电记账标题
                     HStack {
@@ -89,7 +89,7 @@ struct ManualInputView: View {
                     }
                     .padding(.horizontal, 24)
                     .padding(.vertical, 16)
-                    .background(Color.white)
+                    .background(Color.cardBackground(for: colorScheme))
                     
                     ScrollView {
                         VStack(spacing: 0) {
@@ -111,7 +111,7 @@ struct ManualInputView: View {
                                     VStack(spacing: 8) {
                                         ZStack {
                                             Circle()
-                                                .fill(Color.gray.opacity(0.1))
+                                                .fill(colorScheme == .dark ? Color.gray.opacity(0.2) : Color.gray.opacity(0.1))
                                                 .frame(width: 48, height: 48)
                                             Image(systemName: "camera")
                                                 .font(.system(size: 20))
@@ -125,7 +125,7 @@ struct ManualInputView: View {
                                 }
                                 .padding(.horizontal, 24)
                                 .padding(.vertical, 24)
-                                .background(Color.white)
+                                .background(Color.cardBackground(for: colorScheme))
                             }
                             
                             // 详细信息输入区域
@@ -213,7 +213,7 @@ struct ManualInputView: View {
                                     // 图标
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 4)
-                                            .fill(Color.gray.opacity(0.2))
+                                            .fill(colorScheme == .dark ? Color.gray.opacity(0.3) : Color.gray.opacity(0.2))
                                             .frame(width: 24, height: 24)
                                         
                                         Image(systemName: "note.text")
@@ -235,12 +235,12 @@ struct ManualInputView: View {
                                         .multilineTextAlignment(.trailing)
                                         .focused($notesFieldFocused)
                                 }
-                                .padding(.horizontal, 16)
+                                .padding(.horizontal, 24)
                                 .padding(.vertical, 12)
-                                .background(Color.white)
+                                .background(Color.cardBackground(for: colorScheme))
                             }
                             .buttonStyle(PlainButtonStyle())
-                            .background(Color.white)
+                            .background(Color.cardBackground(for: colorScheme))
                             .padding(.top, 16)
                         }
                     }
@@ -322,7 +322,7 @@ struct ManualInputView: View {
                             }
                             .frame(height: 240)
                         }
-                        .background(Color.white)
+                        .background(Color.cardBackground(for: colorScheme))
                         .overlay(
                             Rectangle()
                                 .fill(Color.gray.opacity(0.2))
@@ -519,11 +519,13 @@ struct DetailInputRow: View {
     var hasX: Bool = false
     var isSelected: Bool = false
     
+    @Environment(\.colorScheme) private var colorScheme
+    
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(Color.gray.opacity(0.2))
+                    .fill(colorScheme == .dark ? Color.gray.opacity(0.3) : Color.gray.opacity(0.2))
                     .frame(width: 24, height: 24)
                 
                 Image(systemName: icon)
@@ -560,7 +562,7 @@ struct DetailInputRow: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 12)
-        .background(isSelected ? Color.blue.opacity(0.05) : Color.white)
+        .background(isSelected ? Color.blue.opacity(0.05) : Color.cardBackground(for: colorScheme))
     }
 }
 
@@ -568,6 +570,8 @@ struct KeypadButton: View {
     let content: String
     let systemImage: String?
     let action: () -> Void
+    
+    @Environment(\.colorScheme) private var colorScheme
     
     init(_ text: String, action: @escaping () -> Void) {
         self.content = text
@@ -585,7 +589,7 @@ struct KeypadButton: View {
         Button(action: action) {
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.gray.opacity(0.1))
+                    .fill(colorScheme == .dark ? Color.gray.opacity(0.2) : Color.gray.opacity(0.1))
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
                             .stroke(Color.gray.opacity(0.2), lineWidth: 1)
@@ -654,10 +658,15 @@ struct LocationPickerView: View {
     let categories: [ChargingStationCategory]
     @Binding var selectedLocation: String
     
+    // 按照 sortOrder 排序的分类列表
+    private var sortedCategories: [ChargingStationCategory] {
+        categories.sorted { $0.sortOrder < $1.sortOrder }
+    }
+    
     var body: some View {
         NavigationView {
             List {
-                ForEach(categories, id: \.id) { category in
+                ForEach(sortedCategories, id: \.id) { category in
                     Button(action: {
                         selectedLocation = category.name
                         dismiss()
