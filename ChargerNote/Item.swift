@@ -45,13 +45,15 @@ final class ChargingStationCategory {
     var color: String // 存储颜色的十六进制值
     var icon: String
     var createdAt: Date
+    var sortOrder: Int // 排序顺序
     
-    init(name: String, color: String, icon: String) {
+    init(name: String, color: String, icon: String, sortOrder: Int = 0) {
         self.id = UUID()
         self.name = name
         self.color = color
         self.icon = icon
         self.createdAt = Date()
+        self.sortOrder = sortOrder
     }
 }
 

@@ -293,7 +293,17 @@ struct SwipeableHomeRecordRow: View {
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .offset(x: offset)
-                    .highPriorityGesture(
+                    .simultaneousGesture(
+                        TapGesture()
+                            .onEnded { _ in
+                                if offset < 0 {
+                                    withAnimation(.spring()) {
+                                        offset = 0
+                                    }
+                                }
+                            }
+                    )
+                    .gesture(
                         DragGesture(minimumDistance: 20)
                             .onChanged { gesture in
                                 // 判断滑动方向（仅在首次滑动时判断）

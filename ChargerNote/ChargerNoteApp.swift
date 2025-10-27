@@ -19,12 +19,44 @@ struct ChargerNoteApp: App {
             ChargingStationCategory.self,
             UserSettings.self,
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        
+        // 创建新的配置 - 使用固定的URL避免冲突
+        let url = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("ChargerNote.store")
+        
+        let modelConfiguration = ModelConfiguration(
+            schema: schema,
+            url: url
+        )
 
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            print("ModelContainer error: \(error)")
+            print("Attempting to clean old database files...")
+            
+            // 只有在创建失败时才删除旧数据
+            let storeURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("default.store")
+            
+            // 删除所有相关文件
+            let fileExtensions = ["", "-shm", "-wal"]
+            for ext in fileExtensions {
+                let url = storeURL.path.appending(ext)
+                if FileManager.default.fileExists(atPath: url) {
+                    try? FileManager.default.removeItem(atPath: url)
+                    print("Removed old database file: \(url)")
+                }
+            }
+            
+            // 重新尝试创建
+            do {
+                print("Recreating ModelContainer...")
+                return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            } catch {
+                print("Failed to recreate ModelContainer: \(error)")
+                fatalError("Could not create ModelContainer: \(error)")
+            }
         }
     }()
 
