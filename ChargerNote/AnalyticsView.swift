@@ -11,6 +11,7 @@ import UIKit
 
 struct AnalyticsView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
     @Query private var chargingRecords: [ChargingRecord]
     @Query private var categories: [ChargingStationCategory]
     @Query private var userSettings: [UserSettings]
@@ -57,7 +58,7 @@ struct AnalyticsView: View {
                         VStack(spacing: 0) {
                             // 绿色渐变背景
                             LinearGradient(
-                                gradient: Gradient(colors: [Color(red: 0.2, green: 0.78, blue: 0.35), Color(red: 0.19, green: 0.69, blue: 0.31)]),
+                                gradient: Gradient(colors: Color.adaptiveGreenColors(for: colorScheme)),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -184,8 +185,8 @@ struct AnalyticsView: View {
                                 .padding(24)
                                 .background(
                                     RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color.white)
-                                        .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+                                        .fill(Color.cardBackground(for: colorScheme))
+                                        .shadow(color: Color.cardShadow(for: colorScheme), radius: 10, x: 0, y: 4)
                                 )
                                 .padding(.horizontal, 24)
                             }
@@ -213,6 +214,7 @@ struct StatisticCard: View {
     let change: String
     let changeColor: Color
     let icon: String
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -239,8 +241,8 @@ struct StatisticCard: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+                .fill(Color.cardBackground(for: colorScheme))
+                .shadow(color: Color.cardShadow(for: colorScheme), radius: 10, x: 0, y: 4)
         )
     }
 }
@@ -299,6 +301,7 @@ struct TrendChartView: View {
     let dataPoints: [TrendDataPoint]
     let timeRange: TimeRange
     let currencySymbol: String
+    @Environment(\.colorScheme) private var colorScheme
     
     private var maxAmount: Double {
         dataPoints.map { $0.amount }.max() ?? 100
@@ -392,7 +395,10 @@ struct TrendChartView: View {
                             }
                             .stroke(
                                 LinearGradient(
-                                    gradient: Gradient(colors: [Color(red: 0.2, green: 0.78, blue: 0.35), Color(red: 0.19, green: 0.69, blue: 0.31)]),
+                                    gradient: Gradient(colors: colorScheme == .dark ? [
+                                        Color(red: 0.15, green: 0.65, blue: 0.25),
+                                        Color(red: 0.12, green: 0.55, blue: 0.22)
+                                    ] : Color.adaptiveGreenColors(for: colorScheme)),
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 ),
@@ -423,8 +429,11 @@ struct TrendChartView: View {
                             }
                             .fill(
                                 LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        Color(red: 0.2, green: 0.78, blue: 0.35).opacity(0.3),
+                                    gradient: Gradient(colors: colorScheme == .dark ? [
+                                        Color(red: 0.15, green: 0.65, blue: 0.25).opacity(0.3),
+                                        Color(red: 0.12, green: 0.55, blue: 0.22).opacity(0.05)
+                                    ] : [
+                                        Color.adaptiveGreenBorder(for: colorScheme).opacity(0.3),
                                         Color(red: 0.19, green: 0.69, blue: 0.31).opacity(0.05)
                                     ]),
                                     startPoint: .top,
@@ -442,11 +451,11 @@ struct TrendChartView: View {
                                 let y = chartHeight * (1 - CGFloat(normalizedAmount))
                                 
                                 Circle()
-                                    .fill(Color.white)
+                                    .fill(Color.cardBackground(for: colorScheme))
                                     .frame(width: 8, height: 8)
                                     .overlay(
                                         Circle()
-                                            .stroke(Color(red: 0.2, green: 0.78, blue: 0.35), lineWidth: 2)
+                                            .stroke(Color.adaptiveGreenBorder(for: colorScheme), lineWidth: 2)
                                     )
                                     .position(x: x, y: y)
                             }
@@ -481,8 +490,8 @@ struct TrendChartView: View {
         .padding(24)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+                .fill(Color.cardBackground(for: colorScheme))
+                .shadow(color: Color.cardShadow(for: colorScheme), radius: 10, x: 0, y: 4)
         )
     }
     

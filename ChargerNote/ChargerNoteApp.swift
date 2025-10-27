@@ -10,6 +10,8 @@ import SwiftData
 
 @main
 struct ChargerNoteApp: App {
+    @StateObject private var themeManager = ThemeManager.shared
+    
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
@@ -29,6 +31,8 @@ struct ChargerNoteApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(themeManager)
+                .preferredColorScheme(themeManager.currentTheme.colorScheme)
         }
         .modelContainer(sharedModelContainer)
     }

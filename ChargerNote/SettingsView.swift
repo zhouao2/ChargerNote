@@ -11,6 +11,8 @@ import UIKit
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
+    @EnvironmentObject var themeManager: ThemeManager
     @Query private var chargingRecords: [ChargingRecord]
     @Query private var categories: [ChargingStationCategory]
     @Query private var userSettings: [UserSettings]
@@ -18,6 +20,13 @@ struct SettingsView: View {
     @State private var showingAddCategory = false
     @State private var editingCategory: ChargingStationCategory?
     @State private var showingCategoryManagement = false
+    
+    // 折叠状态
+    @State private var isAppearanceExpanded = false
+    @State private var isCurrencyExpanded = false
+    @State private var isStationExpanded = false
+    @State private var isDataExpanded = false
+    @State private var isDangerExpanded = false
     
     enum Currency: String, CaseIterable {
         case cny = "人民币 (¥)"
@@ -61,7 +70,7 @@ struct SettingsView: View {
                         VStack(spacing: 0) {
                             // 绿色渐变背景
                             LinearGradient(
-                                gradient: Gradient(colors: [Color(red: 0.2, green: 0.78, blue: 0.35), Color(red: 0.19, green: 0.69, blue: 0.31)]),
+                                gradient: Gradient(colors: Color.adaptiveGreenColors(for: colorScheme)),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -72,11 +81,11 @@ struct SettingsView: View {
                                     HStack {
                                         Text("设置")
                                             .font(.system(size: 24, weight: .bold))
-                                            .foregroundColor(.white)
+                                            .foregroundColor(colorScheme == .dark ? .white.opacity(0.95) : .white)
                                         Spacer()
                                         Image(systemName: "person.circle")
                                             .font(.system(size: 24))
-                                            .foregroundColor(.white)
+                                            .foregroundColor(colorScheme == .dark ? .white.opacity(0.95) : .white)
                                     }
                                     .padding(.horizontal, 24)
                                     .padding(.top, 20)
@@ -85,21 +94,21 @@ struct SettingsView: View {
                                     HStack(spacing: 12) {
                                         ZStack {
                                             Circle()
-                                                .fill(Color.white.opacity(0.3))
+                                                .fill(colorScheme == .dark ? Color.white.opacity(0.15) : Color.white.opacity(0.25))
                                                 .frame(width: 48, height: 48)
                                             Image(systemName: "person")
                                                 .font(.system(size: 20))
-                                                .foregroundColor(.white)
+                                                .foregroundColor(colorScheme == .dark ? .white.opacity(0.9) : .white)
                                         }
                                         
                                         VStack(alignment: .leading, spacing: 4) {
                                             Text("充电记账用户")
                                                 .font(.system(size: 16, weight: .medium))
-                                                .foregroundColor(.white)
+                                                .foregroundColor(colorScheme == .dark ? .white.opacity(0.95) : .white)
                                             
                                             Text("已记录 \(chargingRecords.count) 条充电记录")
                                                 .font(.system(size: 14))
-                                                .foregroundColor(.white.opacity(0.8))
+                                                .foregroundColor(colorScheme == .dark ? .white.opacity(0.75) : .white.opacity(0.95))
                                         }
                                         
                                         Spacer()
@@ -107,7 +116,7 @@ struct SettingsView: View {
                                     .padding(16)
                                     .background(
                                         RoundedRectangle(cornerRadius: 16)
-                                            .fill(Color.white.opacity(0.2))
+                                            .fill(colorScheme == .dark ? Color.white.opacity(0.15) : Color.white.opacity(0.25))
                                     )
                                     .padding(.horizontal, 24)
                                     .padding(.bottom, 16)
@@ -116,8 +125,22 @@ struct SettingsView: View {
                             
                             // 白色内容区域
                             VStack(spacing: 24) {
+                                // 主题设置
+                                CollapsibleSettingsSection(title: "外观设置", isExpanded: $isAppearanceExpanded) {
+                                    ForEach(AppTheme.allCases, id: \.self) { theme in
+                                        SettingsRow(
+                                            icon: theme == .light ? "sun.max.fill" : theme == .dark ? "moon.fill" : "circle.lefthalf.filled",
+                                            title: theme.rawValue,
+                                            hasCheckmark: themeManager.currentTheme == theme,
+                                            action: {
+                                                themeManager.currentTheme = theme
+                                            }
+                                        )
+                                    }
+                                }
+                                
                                 // 货币单位设置
-                                SettingsSection(title: "货币单位") {
+                                CollapsibleSettingsSection(title: "货币单位", isExpanded: $isCurrencyExpanded) {
                                     ForEach(Currency.allCases, id: \.self) { currency in
                                         SettingsRow(
                                             icon: currency.icon,
@@ -132,21 +155,21 @@ struct SettingsView: View {
                                 }
                                 
                                 // 充电站点管理
-                                SettingsSection(title: "充电站点管理") {
+                                CollapsibleSettingsSection(title: "充电站点管理", isExpanded: $isStationExpanded) {
                                     SettingsRow(icon: "mappin.and.ellipse", title: "管理充电站点", hasArrow: true, action: {
                                         showingCategoryManagement = true
                                     })
                                 }
                                 
                                 // 数据管理
-                                SettingsSection(title: "数据管理") {
+                                CollapsibleSettingsSection(title: "数据管理", isExpanded: $isDataExpanded) {
                                     SettingsRow(icon: "square.and.arrow.down", title: "导出CSV数据", hasArrow: true)
                                     SettingsRow(icon: "icloud.and.arrow.up", title: "备份到iCloud", hasArrow: true)
                                     SettingsRow(icon: "icloud.and.arrow.down", title: "从iCloud恢复", hasArrow: true)
                                 }
                                 
                                 // 危险操作
-                                SettingsSection(title: "危险操作") {
+                                CollapsibleSettingsSection(title: "危险操作", isExpanded: $isDangerExpanded) {
                                     SettingsRow(icon: "trash", title: "清除所有数据", titleColor: .red, hasArrow: true)
                                 }
                                 
@@ -154,7 +177,7 @@ struct SettingsView: View {
                                 SettingsSection(title: "应用信息") {
                                     SettingsRow(title: "版本号", value: "1.0.0")
                                     SettingsRow(title: "构建版本", value: "2025.10.25")
-                                    SettingsRow(title: "开发者", value: "Zhou Ao")
+                                    SettingsRow(title: "开发者", value: "Zhou Ao", showSeparator: false)
                                 }
                             }
                             .padding(.horizontal, 24)
@@ -236,10 +259,82 @@ struct SettingsView: View {
 }
 
 
+struct CollapsibleSettingsSection<Content: View>: View {
+    let title: String
+    let content: Content
+    @Binding var isExpanded: Bool
+    @Environment(\.colorScheme) private var colorScheme
+    
+    init(title: String, isExpanded: Binding<Bool>, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self._isExpanded = isExpanded
+        self.content = content()
+    }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // 标题栏 - 可点击
+            Button(action: {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    isExpanded.toggle()
+                }
+            }) {
+                HStack {
+                    Text(title)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    // 增大折叠图标可点击区域
+                    ZStack {
+                        Circle()
+                            .fill(Color.clear)
+                            .frame(width: 32, height: 32)
+                        
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(PlainButtonStyle())
+            .background(Color.cardBackground(for: colorScheme))
+            
+            // 顶部分隔线
+            if isExpanded {
+                Rectangle()
+                    .fill(Color.gray.opacity(colorScheme == .dark ? 0.3 : 0.2))
+                    .frame(height: 0.5)
+            }
+            
+            // 内容 - 根据折叠状态显示/隐藏
+            if isExpanded {
+                VStack(spacing: 0) {
+                    content
+                }
+                .background(Color.cardBackground(for: colorScheme))
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.cardBackground(for: colorScheme))
+                .shadow(color: Color.cardShadow(for: colorScheme), radius: 10, x: 0, y: 4)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+}
+
 struct SettingsSection<Content: View>: View {
     let title: String
     let content: Content
     let action: (() -> Void)?
+    @Environment(\.colorScheme) private var colorScheme
     
     init(title: String, action: (() -> Void)? = nil, @ViewBuilder content: () -> Content) {
         self.title = title
@@ -271,18 +366,18 @@ struct SettingsSection<Content: View>: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 16)
-            .background(Color.white)
+            .background(Color.cardBackground(for: colorScheme))
             
             // 内容
             VStack(spacing: 0) {
                 content
             }
-            .background(Color.white)
+            .background(Color.cardBackground(for: colorScheme))
         }
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+                .fill(Color.cardBackground(for: colorScheme))
+                .shadow(color: Color.cardShadow(for: colorScheme), radius: 10, x: 0, y: 4)
         )
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
@@ -295,58 +390,71 @@ struct SettingsRow: View {
     let titleColor: Color
     let hasArrow: Bool
     let hasCheckmark: Bool
+    let showSeparator: Bool
     let action: (() -> Void)?
+    @Environment(\.colorScheme) private var colorScheme
     
-    init(icon: String? = nil, title: String, value: String? = nil, titleColor: Color = .primary, hasArrow: Bool = false, hasCheckmark: Bool = false, action: (() -> Void)? = nil) {
+    init(icon: String? = nil, title: String, value: String? = nil, titleColor: Color = .primary, hasArrow: Bool = false, hasCheckmark: Bool = false, showSeparator: Bool = true, action: (() -> Void)? = nil) {
         self.icon = icon
         self.title = title
         self.value = value
         self.titleColor = titleColor
         self.hasArrow = hasArrow
         self.hasCheckmark = hasCheckmark
+        self.showSeparator = showSeparator
         self.action = action
     }
     
     var body: some View {
-        Button(action: action ?? {}) {
-            HStack(spacing: 12) {
-                if let icon = icon {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color.gray.opacity(0.2))
-                            .frame(width: 24, height: 24)
-                        
-                        Image(systemName: icon)
+        VStack(spacing: 0) {
+            Button(action: action ?? {}) {
+                HStack(spacing: 12) {
+                    if let icon = icon {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.gray.opacity(colorScheme == .dark ? 0.3 : 0.2))
+                                .frame(width: 24, height: 24)
+                            
+                            Image(systemName: icon)
+                                .font(.system(size: 12))
+                                .foregroundColor(.gray)
+                        }
+                    }
+                    
+                    Text(title)
+                        .font(.system(size: 16))
+                        .foregroundColor(titleColor)
+                    
+                    Spacer()
+                    
+                    if let value = value {
+                        Text(value)
+                            .font(.system(size: 16))
+                            .foregroundColor(.secondary)
+                    } else if hasArrow {
+                        Image(systemName: "chevron.right")
                             .font(.system(size: 12))
                             .foregroundColor(.gray)
+                    } else if hasCheckmark {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 12))
+                            .foregroundColor(.green)
                     }
                 }
-                
-                Text(title)
-                    .font(.system(size: 16))
-                    .foregroundColor(titleColor)
-                
-                Spacer()
-                
-                if let value = value {
-                    Text(value)
-                        .font(.system(size: 16))
-                        .foregroundColor(.secondary)
-                } else if hasArrow {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12))
-                        .foregroundColor(.gray)
-                } else if hasCheckmark {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 12))
-                        .foregroundColor(.green)
-                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color.cardBackground(for: colorScheme))
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color.white)
+            .buttonStyle(PlainButtonStyle())
+            
+            // 底部分隔线
+            if showSeparator {
+                Rectangle()
+                    .fill(Color.gray.opacity(colorScheme == .dark ? 0.3 : 0.2))
+                    .frame(height: 0.5)
+                    .padding(.leading, icon != nil ? 52 : 16)
+            }
         }
-        .buttonStyle(PlainButtonStyle())
     }
 }
 

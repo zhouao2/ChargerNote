@@ -11,6 +11,7 @@ import UIKit
 
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
     @Query private var chargingRecords: [ChargingRecord]
     @Query private var userSettings: [UserSettings]
     @State private var showingManualInput = false
@@ -36,7 +37,7 @@ struct HomeView: View {
                             VStack(spacing: 0) {
                                 // 绿色渐变背景
                                 LinearGradient(
-                                    gradient: Gradient(colors: [Color(red: 0.2, green: 0.78, blue: 0.35), Color(red: 0.19, green: 0.69, blue: 0.31)]),
+                                    gradient: Gradient(colors: Color.adaptiveGreenColors(for: colorScheme)),
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
@@ -130,8 +131,8 @@ struct HomeView: View {
                                             .padding(24)
                                             .background(
                                                 RoundedRectangle(cornerRadius: 16)
-                                                    .fill(Color.white)
-                                                    .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+                                                    .fill(Color.cardBackground(for: colorScheme))
+                                                    .shadow(color: Color.cardShadow(for: colorScheme), radius: 10, x: 0, y: 4)
                                             )
                                         }
                                         .buttonStyle(PlainButtonStyle())
@@ -163,8 +164,8 @@ struct HomeView: View {
                                             .padding(24)
                                             .background(
                                                 RoundedRectangle(cornerRadius: 16)
-                                                    .fill(Color.white)
-                                                    .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+                                                    .fill(Color.cardBackground(for: colorScheme))
+                                                    .shadow(color: Color.cardShadow(for: colorScheme), radius: 10, x: 0, y: 4)
                                             )
                                         }
                                         .buttonStyle(PlainButtonStyle())
@@ -227,6 +228,7 @@ struct SwipeableHomeRecordRow: View {
     
     @State private var offset: CGFloat = 0
     @State private var dragDirection: DragDirection? = nil
+    @Environment(\.colorScheme) private var colorScheme
     
     private let actionButtonWidth: CGFloat = 80
     private let swipeThreshold: CGFloat = 50
@@ -286,8 +288,8 @@ struct SwipeableHomeRecordRow: View {
                     .frame(width: geometry.size.width)
                     .background(
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.white)
-                            .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+                            .fill(Color.cardBackground(for: colorScheme))
+                            .shadow(color: Color.cardShadow(for: colorScheme), radius: 10, x: 0, y: 4)
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .offset(x: offset)
@@ -356,6 +358,7 @@ struct SwipeableHomeRecordRow: View {
 struct ChargingRecordRow: View {
     let record: ChargingRecord
     let currencySymbol: String
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         HStack(spacing: 12) {
@@ -396,8 +399,8 @@ struct ChargingRecordRow: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+                .fill(Color.cardBackground(for: colorScheme))
+                .shadow(color: Color.cardShadow(for: colorScheme), radius: 10, x: 0, y: 4)
         )
     }
     

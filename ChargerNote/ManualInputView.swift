@@ -12,6 +12,7 @@ import UIKit
 struct ManualInputView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @Query private var categories: [ChargingStationCategory]
     @Query private var userSettings: [UserSettings]
     

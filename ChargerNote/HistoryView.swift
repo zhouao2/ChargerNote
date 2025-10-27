@@ -11,6 +11,7 @@ import UIKit
 
 struct HistoryView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
     @Query private var chargingRecords: [ChargingRecord]
     @Query private var userSettings: [UserSettings]
     @State private var selectedMonth = Date()
@@ -33,7 +34,7 @@ struct HistoryView: View {
                         VStack(spacing: 0) {
                             // 绿色渐变背景
                             LinearGradient(
-                                gradient: Gradient(colors: [Color(red: 0.2, green: 0.78, blue: 0.35), Color(red: 0.19, green: 0.69, blue: 0.31)]),
+                                gradient: Gradient(colors: Color.adaptiveGreenColors(for: colorScheme)),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -124,8 +125,8 @@ struct HistoryView: View {
                                 .padding(24)
                                 .background(
                                     RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color.white)
-                                        .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+                                        .fill(Color.cardBackground(for: colorScheme))
+                                        .shadow(color: Color.cardShadow(for: colorScheme), radius: 10, x: 0, y: 4)
                                 )
                                 .padding(.horizontal, 24)
                                 .padding(.top, 24)
@@ -201,6 +202,7 @@ struct TimelineDayView: View {
     let currencySymbol: String
     let onEdit: (ChargingRecord) -> Void
     let onDelete: (ChargingRecord) -> Void
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -208,13 +210,7 @@ struct TimelineDayView: View {
             HStack {
                 ZStack {
                     Circle()
-                        .fill(
-                            LinearGradient(
-                                gradient: Gradient(colors: [Color(red: 0.2, green: 0.78, blue: 0.35), Color(red: 0.19, green: 0.69, blue: 0.31)]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                        .fill(Color.adaptiveGreenBorder(for: colorScheme))
                         .frame(width: 12, height: 12)
                 }
                 
@@ -254,6 +250,7 @@ struct SwipeableRecordRow: View {
     @State private var offset: CGFloat = 0
     @State private var isSwiping = false
     @State private var dragDirection: DragDirection? = nil
+    @Environment(\.colorScheme) private var colorScheme
     
     private let actionButtonWidth: CGFloat = 80
     private let swipeThreshold: CGFloat = 50
@@ -313,8 +310,8 @@ struct SwipeableRecordRow: View {
                     .frame(width: geometry.size.width)
                     .background(
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.white)
-                            .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+                            .fill(Color.cardBackground(for: colorScheme))
+                            .shadow(color: Color.cardShadow(for: colorScheme), radius: 10, x: 0, y: 4)
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .offset(x: offset)
@@ -383,6 +380,7 @@ struct SwipeableRecordRow: View {
 struct HistoryRecordRow: View {
     let record: ChargingRecord
     let currencySymbol: String
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         HStack(spacing: 12) {
@@ -423,8 +421,8 @@ struct HistoryRecordRow: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+                .fill(Color.cardBackground(for: colorScheme))
+                .shadow(color: Color.cardShadow(for: colorScheme), radius: 10, x: 0, y: 4)
         )
     }
     

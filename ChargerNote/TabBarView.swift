@@ -11,6 +11,7 @@ import SwiftData
 struct TabBarView: View {
     @Binding var selectedTab: Tab
     @State private var showingManualInput = false
+    @Environment(\.colorScheme) private var colorScheme
     
     enum Tab: Int, CaseIterable {
         case home = 0
@@ -53,37 +54,32 @@ struct TabBarView: View {
             }
             
             // 底部导航栏
-            HStack(spacing: 0) {
-                ForEach(Tab.allCases, id: \.self) { tab in
-                    Button(action: {
-                        selectedTab = tab
-                    }) {
-                        VStack(spacing: 4) {
-                            Image(systemName: tab.icon)
-                                .font(.system(size: 20))
-                                .foregroundColor(selectedTab == tab ? .green : .gray)
-                            
-                            Text(tab.title)
-                                .font(.system(size: 12, weight: selectedTab == tab ? .medium : .regular))
-                                .foregroundColor(selectedTab == tab ? .green : .gray)
+            GeometryReader { geometry in
+                HStack(spacing: 0) {
+                    ForEach(Tab.allCases, id: \.self) { tab in
+                        Button(action: {
+                            selectedTab = tab
+                        }) {
+                            VStack(spacing: 4) {
+                                Image(systemName: tab.icon)
+                                    .font(.system(size: 20))
+                                    .foregroundColor(selectedTab == tab ? .green : .gray)
+                                
+                                Text(tab.title)
+                                    .font(.system(size: 12, weight: selectedTab == tab ? .medium : .regular))
+                                    .foregroundColor(selectedTab == tab ? .green : .gray)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 8)
+                            .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom : 8)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .buttonStyle(PlainButtonStyle())
                 }
+                .background(Color.cardBackground(for: colorScheme))
+                .shadow(color: Color.cardShadow(for: colorScheme), radius: 8, x: 0, y: -2)
             }
-            .background(
-                Rectangle()
-                    .fill(Color.white)
-                    .shadow(color: .black.opacity(0.1), radius: 0, x: 0, y: -1)
-            )
-            .overlay(
-                Rectangle()
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(height: 1),
-                alignment: .top
-            )
+            .frame(height: 60)
         }
         .sheet(isPresented: $showingManualInput) {
             ManualInputView()
