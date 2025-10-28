@@ -67,10 +67,17 @@
 
 // MARK: - History View
 "history.title" = "历史记录";
+"history.statistics" = "统计";
+"history.records_count" = "条记录";
+"history.total_expense" = "总支出";
+"history.avg_kwh" = "平均度数";
 "history.no_records" = "本月暂无记录";
 "history.delete_confirm" = "确定要删除这条记录吗？";
 "history.delete" = "删除";
 "history.edit" = "编辑";
+"history.acquired" = "获得";
+"history.kwh" = "度";
+"history.kwh_unit" = "度电";
 "history.acquired_kwh" = "获得%.0f度";
 "history.unit_price" = "约¥%.2f/度";
 
@@ -94,6 +101,11 @@
 "analytics.this_month" = "本月";
 "analytics.this_year" = "本年";
 "analytics.station_distribution" = "充电站分布";
+"analytics.location_distribution" = "地点分布";
+"analytics.by_amount" = "按消费金额";
+"analytics.charging_times" = "充电次数";
+"analytics.points_consumed" = "积分消耗";
+"analytics.times_charged" = "次充电";
 "analytics.no_data" = "暂无数据";
 
 // MARK: - Settings View

@@ -182,11 +182,11 @@ struct AnalyticsView: View {
                                 // 地点分布图
                                 VStack(spacing: 16) {
                                     HStack {
-                                        Text("地点分布")
+                                        Text(L("analytics.location_distribution"))
                                             .font(.system(size: 18, weight: .semibold))
                                             .foregroundColor(.primary)
                                         Spacer()
-                                        Text("按消费金额")
+                                        Text(L("analytics.by_amount"))
                                             .font(.system(size: 14))
                                             .foregroundColor(.secondary)
                                     }
@@ -284,7 +284,7 @@ struct StatsBar: View {
             HStack(spacing: 0) {
                 // 充电次数
                 HStack(spacing: 4) {
-                    Text("充电次数:")
+                    Text(L("analytics.charging_times") + ":")
                         .font(.system(size: 13))
                         .foregroundColor(.secondary)
                     Text("\(chargingCount)")
@@ -301,7 +301,7 @@ struct StatsBar: View {
                 
                 // 积分
                 HStack(spacing: 4) {
-                    Text("积分消耗:")
+                    Text(L("analytics.points_consumed") + ":")
                         .font(.system(size: 13))
                         .foregroundColor(.secondary)
                     Text(String(format: "%.0f", points))
@@ -318,7 +318,7 @@ struct StatsBar: View {
                 
                 // 平均电费
                 HStack(spacing: 4) {
-                    Text("平均电费:")
+                    Text(L("analytics.avg_cost") + ":")
                         .font(.system(size: 13))
                         .foregroundColor(.secondary)
                     Text("\(currencySymbol)\(String(format: "%.2f", averageFee))")
@@ -359,7 +359,7 @@ struct LocationDistributionRow: View {
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.primary)
                 
-                Text("\(location.count)次充电")
+                Text("\(location.count)" + L("analytics.times_charged"))
                     .font(.system(size: 14))
                     .foregroundColor(.secondary)
             }
@@ -386,7 +386,7 @@ struct LocationDistributionRow: View {
     }
 }
 
-// 折线图组件
+// 支出趋势图组件
 struct TrendChartView: View {
     let dataPoints: [TrendDataPoint]
     let timeRange: TimeRange
@@ -394,7 +394,9 @@ struct TrendChartView: View {
     @Environment(\.colorScheme) private var colorScheme
     
     private var maxAmount: Double {
-        dataPoints.map { $0.amount }.max() ?? 100
+        let maxValue = dataPoints.map { $0.amount }.max() ?? 0
+        // 当最大值为0或过小时，使用默认值以保证Y轴显示合理的刻度
+        return maxValue > 0.01 ? maxValue : 100
     }
     
     private var displayInterval: Int {
@@ -446,7 +448,7 @@ struct TrendChartView: View {
                             }
                         }
                     }
-                    .frame(width: 40, height: 200)
+                    .frame(width: 50, height: 200)
                     
                     // 图表区域
                     GeometryReader { geometry in
@@ -468,7 +470,7 @@ struct TrendChartView: View {
                             // 折线图路径
                             Path { path in
                                 let chartWidth = geometry.size.width
-                                let chartHeight = geometry.size.height - 40 // 留出底部标签空间
+                                let chartHeight = geometry.size.height // 使用完整高度，与Y轴标签对齐
                                 let stepX = chartWidth / CGFloat(max(dataPoints.count - 1, 1))
                                 
                                 for (index, point) in dataPoints.enumerated() {
@@ -498,7 +500,7 @@ struct TrendChartView: View {
                             // 渐变填充
                             Path { path in
                                 let chartWidth = geometry.size.width
-                                let chartHeight = geometry.size.height - 40
+                                let chartHeight = geometry.size.height // 使用完整高度，与Y轴标签对齐
                                 let stepX = chartWidth / CGFloat(max(dataPoints.count - 1, 1))
                                 
                                 for (index, point) in dataPoints.enumerated() {
@@ -530,23 +532,23 @@ struct TrendChartView: View {
                                     endPoint: .bottom
                                 )
                             )
+                        
+                        // 数据点
+                        ForEach(Array(dataPoints.enumerated()), id: \.element.id) { index, point in
+                            let chartWidth = geometry.size.width
+                            let chartHeight = geometry.size.height // 使用完整高度，与Y轴标签对齐
+                            let stepX = chartWidth / CGFloat(max(dataPoints.count - 1, 1))
+                            let x = CGFloat(index) * stepX
+                            let normalizedAmount = maxAmount > 0 ? point.amount / maxAmount : 0
+                            let y = chartHeight * (1 - CGFloat(normalizedAmount))
                             
-                            // 数据点
-                            ForEach(Array(dataPoints.enumerated()), id: \.element.id) { index, point in
-                                let chartWidth = geometry.size.width
-                                let chartHeight = geometry.size.height - 40
-                                let stepX = chartWidth / CGFloat(max(dataPoints.count - 1, 1))
-                                let x = CGFloat(index) * stepX
-                                let normalizedAmount = maxAmount > 0 ? point.amount / maxAmount : 0
-                                let y = chartHeight * (1 - CGFloat(normalizedAmount))
-                                
-                                Circle()
-                                    .fill(Color.cardBackground(for: colorScheme))
-                                    .frame(width: 8, height: 8)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(Color.adaptiveGreenBorder(for: colorScheme), lineWidth: 2)
-                                    )
+                            Circle()
+                                .fill(Color.cardBackground(for: colorScheme))
+                                .frame(width: 8, height: 8)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.adaptiveGreenBorder(for: colorScheme), lineWidth: 2)
+                                )
                                     .position(x: x, y: y)
                             }
                         }
@@ -587,23 +589,26 @@ struct TrendChartView: View {
     
     private var timeRangeDescription: String {
         switch timeRange {
-        case .week: return "本周"
-        case .month: return "本月"
-        case .year: return "本年"
+        case .week: return L("analytics.this_week")
+        case .month: return L("analytics.this_month")
+        case .year: return L("analytics.this_year")
         }
     }
     
     private func formatYAxisLabel(_ value: Double) -> String {
+        let isChineseLanguage = Locale.current.language.languageCode?.identifier == "zh"
+        let thousandUnit = isChineseLanguage ? "千" : "k"
+        
         if value >= 1000 {
-            return String(format: "%.1fk", value / 1000)
+            return currencySymbol + String(format: "%.1f", value / 1000) + thousandUnit
         } else if value >= 100 {
-            return String(format: "%.0f", value)
+            return currencySymbol + String(format: "%.0f", value)
         } else if value >= 10 {
-            return String(format: "%.0f", value)
+            return currencySymbol + String(format: "%.0f", value)
         } else if value > 0 {
-            return String(format: "%.1f", value)
+            return currencySymbol + String(format: "%.1f", value)
         } else {
-            return "0"
+            return currencySymbol + "0"
         }
     }
 }
@@ -615,7 +620,9 @@ struct ElectricityTrendChartView: View {
     @Environment(\.colorScheme) private var colorScheme
     
     private var maxAmount: Double {
-        dataPoints.map { $0.amount }.max() ?? 100
+        let maxValue = dataPoints.map { $0.amount }.max() ?? 0
+        // 当最大值为0或过小时，使用默认值以保证Y轴显示合理的刻度
+        return maxValue > 0.01 ? maxValue : 100
     }
     
     private var displayInterval: Int {
@@ -667,7 +674,7 @@ struct ElectricityTrendChartView: View {
                             }
                         }
                     }
-                    .frame(width: 40, height: 200)
+                    .frame(width: 45, height: 200)
                     
                     // 图表区域
                     GeometryReader { geometry in
@@ -689,7 +696,7 @@ struct ElectricityTrendChartView: View {
                             // 折线图路径
                             Path { path in
                                 let chartWidth = geometry.size.width
-                                let chartHeight = geometry.size.height - 40 // 留出底部标签空间
+                                let chartHeight = geometry.size.height // 使用完整高度，与Y轴标签对齐
                                 let stepX = chartWidth / CGFloat(max(dataPoints.count - 1, 1))
                                 
                                 for (index, point) in dataPoints.enumerated() {
@@ -716,7 +723,7 @@ struct ElectricityTrendChartView: View {
                             // 渐变填充
                             Path { path in
                                 let chartWidth = geometry.size.width
-                                let chartHeight = geometry.size.height - 40
+                                let chartHeight = geometry.size.height // 使用完整高度，与Y轴标签对齐
                                 let stepX = chartWidth / CGFloat(max(dataPoints.count - 1, 1))
                                 
                                 for (index, point) in dataPoints.enumerated() {
@@ -749,7 +756,7 @@ struct ElectricityTrendChartView: View {
                             // 数据点
                             ForEach(Array(dataPoints.enumerated()), id: \.element.id) { index, point in
                                 let chartWidth = geometry.size.width
-                                let chartHeight = geometry.size.height - 40
+                                let chartHeight = geometry.size.height // 使用完整高度，与Y轴标签对齐
                                 let stepX = chartWidth / CGFloat(max(dataPoints.count - 1, 1))
                                 let x = CGFloat(index) * stepX
                                 let normalizedAmount = maxAmount > 0 ? point.amount / maxAmount : 0
@@ -802,15 +809,18 @@ struct ElectricityTrendChartView: View {
     
     private var timeRangeDescription: String {
         switch timeRange {
-        case .week: return "本周"
-        case .month: return "本月"
-        case .year: return "本年"
+        case .week: return L("analytics.this_week")
+        case .month: return L("analytics.this_month")
+        case .year: return L("analytics.this_year")
         }
     }
     
     private func formatYAxisLabel(_ value: Double) -> String {
+        let isChineseLanguage = Locale.current.language.languageCode?.identifier == "zh"
+        let thousandUnit = isChineseLanguage ? "千" : "k"
+        
         if value >= 1000 {
-            return String(format: "%.1fk", value / 1000)
+            return String(format: "%.1f", value / 1000) + thousandUnit
         } else if value >= 100 {
             return String(format: "%.0f", value)
         } else if value >= 10 {

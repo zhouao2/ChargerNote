@@ -107,19 +107,19 @@ struct HistoryView: View {
                                 let monthStats = dataManager.getMonthlyStatistics(chargingRecords, for: selectedMonth)
                                 VStack(spacing: 16) {
                                     HStack {
-                                        Text("\(monthYearFormatter.string(from: selectedMonth))统计")
+                                        Text("\(monthYearFormatter.string(from: selectedMonth))" + L("history.statistics"))
                                             .font(.system(size: 18, weight: .semibold))
                                             .foregroundColor(.primary)
                                         Spacer()
-                                        Text("\(monthStats.count)条记录")
+                                        Text("\(monthStats.count)" + L("history.records_count"))
                                             .font(.system(size: 14))
                                             .foregroundColor(.secondary)
                                     }
                                     
                                     HStack(spacing: 16) {
-                                        StatisticItem(title: "总支出", value: "\(currencySymbol)\(String(format: "%.0f", monthStats.totalExpense))", color: .primary)
-                                        StatisticItem(title: "充电次数", value: "\(monthStats.count)", color: .primary)
-                                        StatisticItem(title: "平均度数", value: String(format: "%.1f", monthStats.averageKwh), color: .primary)
+                                        StatisticItem(title: L("history.total_expense"), value: "\(currencySymbol)\(String(format: "%.0f", monthStats.totalExpense))", color: .primary)
+                                        StatisticItem(title: L("analytics.charging_times"), value: "\(monthStats.count)", color: .primary)
+                                        StatisticItem(title: L("history.avg_kwh"), value: String(format: "%.1f", monthStats.averageKwh), color: .primary)
                                     }
                                 }
                                 .padding(24)
@@ -427,11 +427,11 @@ struct HistoryRecordRow: View {
                 
                 // 第二行信息 - 根据记录类型显示不同内容
                 if record.recordType == "充值" {
-                    Text("\(formatTime(record.chargingTime)) • 获得\(String(format: "%.1f", record.electricityAmount))度")
+                    Text("\(formatTime(record.chargingTime)) • " + L("history.acquired") + String(format: "%.1f", record.electricityAmount) + L("history.kwh"))
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
                 } else {
-                    Text("\(formatTime(record.chargingTime)) • \(String(format: "%.1f", record.electricityAmount))度电")
+                    Text("\(formatTime(record.chargingTime)) • \(String(format: "%.1f", record.electricityAmount))" + L("history.kwh_unit"))
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
                 }

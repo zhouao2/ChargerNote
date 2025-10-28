@@ -183,7 +183,7 @@ class DataManager {
                 let nextDay = calendar.date(byAdding: .day, value: 1, to: date) ?? date
                 
                 let dayRecords = records.filter { record in
-                    record.chargingTime >= date && record.chargingTime < nextDay
+                    record.chargingTime >= date && record.chargingTime < nextDay && record.recordType == "充电"
                 }
                 
                 let totalAmount = dayRecords.reduce(0) { $0 + $1.totalAmount }
@@ -197,17 +197,34 @@ class DataManager {
             }
             
         case .month:
-            // 显示最近4周，每周一个点
-            for i in (0..<4).reversed() {
-                guard let weekStart = calendar.date(byAdding: .weekOfYear, value: -i, to: now) else { continue }
+            // 显示本月按周聚合的数据（从1号开始，每7天一组）
+            let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) ?? now
+            
+            // 最多显示5周（1-7, 8-14, 15-21, 22-28, 29-31）
+            for weekIndex in 0..<5 {
+                let weekStartDay = weekIndex * 7 + 1
+                var weekStartComponents = calendar.dateComponents([.year, .month], from: startOfMonth)
+                weekStartComponents.day = weekStartDay
+                
+                guard let weekStart = calendar.date(from: weekStartComponents) else { continue }
+                
+                // 如果周开始日期超过了今天或超出本月，则停止
+                if weekStart > now || !calendar.isDate(weekStart, equalTo: startOfMonth, toGranularity: .month) {
+                    break
+                }
+                
                 let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) ?? weekStart
                 
+                // 过滤这一周的记录（只统计到今天为止，且不超出本月，仅统计充电记录）
                 let weekRecords = records.filter { record in
-                    record.chargingTime >= weekStart && record.chargingTime < weekEnd
+                    record.chargingTime >= weekStart && 
+                    record.chargingTime < min(weekEnd, calendar.date(byAdding: .day, value: 1, to: now) ?? now) &&
+                    calendar.isDate(record.chargingTime, equalTo: startOfMonth, toGranularity: .month) &&
+                    record.recordType == "充电"
                 }
                 
                 let totalAmount = weekRecords.reduce(0) { $0 + $1.totalAmount }
-                let label = "第\(4-i)周"
+                let label = "第\(weekIndex + 1)周"
                 
                 trendData.append(TrendDataPoint(
                     date: weekStart,
@@ -233,7 +250,7 @@ class DataManager {
                 
                 let monthRecords = records.filter { record in
                     guard let start = monthInterval?.start, let end = monthInterval?.end else { return false }
-                    return record.chargingTime >= start && record.chargingTime < end
+                    return record.chargingTime >= start && record.chargingTime < end && record.recordType == "充电"
                 }
                 
                 let totalAmount = monthRecords.reduce(0) { $0 + $1.totalAmount }
@@ -270,7 +287,7 @@ class DataManager {
                 let nextDay = calendar.date(byAdding: .day, value: 1, to: date) ?? date
                 
                 let dayRecords = records.filter { record in
-                    record.chargingTime >= date && record.chargingTime < nextDay
+                    record.chargingTime >= date && record.chargingTime < nextDay && record.recordType == "充电"
                 }
                 
                 let totalKwh = dayRecords.reduce(0) { $0 + $1.electricityAmount }
@@ -284,17 +301,34 @@ class DataManager {
             }
             
         case .month:
-            // 显示最近4周，每周一个点
-            for i in (0..<4).reversed() {
-                guard let weekStart = calendar.date(byAdding: .weekOfYear, value: -i, to: now) else { continue }
+            // 显示本月按周聚合的数据（从1号开始，每7天一组）
+            let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) ?? now
+            
+            // 最多显示5周（1-7, 8-14, 15-21, 22-28, 29-31）
+            for weekIndex in 0..<5 {
+                let weekStartDay = weekIndex * 7 + 1
+                var weekStartComponents = calendar.dateComponents([.year, .month], from: startOfMonth)
+                weekStartComponents.day = weekStartDay
+                
+                guard let weekStart = calendar.date(from: weekStartComponents) else { continue }
+                
+                // 如果周开始日期超过了今天或超出本月，则停止
+                if weekStart > now || !calendar.isDate(weekStart, equalTo: startOfMonth, toGranularity: .month) {
+                    break
+                }
+                
                 let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) ?? weekStart
                 
+                // 过滤这一周的记录（只统计到今天为止，且不超出本月，仅统计充电记录）
                 let weekRecords = records.filter { record in
-                    record.chargingTime >= weekStart && record.chargingTime < weekEnd
+                    record.chargingTime >= weekStart && 
+                    record.chargingTime < min(weekEnd, calendar.date(byAdding: .day, value: 1, to: now) ?? now) &&
+                    calendar.isDate(record.chargingTime, equalTo: startOfMonth, toGranularity: .month) &&
+                    record.recordType == "充电"
                 }
                 
                 let totalKwh = weekRecords.reduce(0) { $0 + $1.electricityAmount }
-                let label = "第\(4-i)周"
+                let label = "第\(weekIndex + 1)周"
                 
                 trendData.append(TrendDataPoint(
                     date: weekStart,
@@ -320,7 +354,7 @@ class DataManager {
                 
                 let monthRecords = records.filter { record in
                     guard let start = monthInterval?.start, let end = monthInterval?.end else { return false }
-                    return record.chargingTime >= start && record.chargingTime < end
+                    return record.chargingTime >= start && record.chargingTime < end && record.recordType == "充电"
                 }
                 
                 let totalKwh = monthRecords.reduce(0) { $0 + $1.electricityAmount }

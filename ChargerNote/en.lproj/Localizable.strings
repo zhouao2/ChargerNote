@@ -67,10 +67,17 @@
 
 // MARK: - History View
 "history.title" = "History";
+"history.statistics" = "Statistics";
+"history.records_count" = " records";
+"history.total_expense" = "Total Expense";
+"history.avg_kwh" = "Avg kWh";
 "history.no_records" = "No records this month";
 "history.delete_confirm" = "Are you sure you want to delete this record?";
 "history.delete" = "Delete";
 "history.edit" = "Edit";
+"history.acquired" = "Acquired";
+"history.kwh" = " kWh";
+"history.kwh_unit" = " kWh";
 "history.acquired_kwh" = "+%.0f kWh";
 "history.unit_price" = "≈$%.2f/kWh";
 
@@ -94,6 +101,11 @@
 "analytics.this_month" = "This Month";
 "analytics.this_year" = "This Year";
 "analytics.station_distribution" = "Station Distribution";
+"analytics.location_distribution" = "Location Distribution";
+"analytics.by_amount" = "By Amount";
+"analytics.charging_times" = "Charging Times";
+"analytics.points_consumed" = "Points Consumed";
+"analytics.times_charged" = " Times";
 "analytics.no_data" = "No Data";
 
 // MARK: - Settings View
