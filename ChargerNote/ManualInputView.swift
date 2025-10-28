@@ -38,6 +38,7 @@ struct ManualInputView: View {
     @State private var showingLocationPicker = false
     @State private var showingDatePicker = false
     @FocusState private var notesFieldFocused: Bool
+    @State private var shouldClearOnNextInput: Bool = false // 标记下次输入是否应清空
     
     // 是否显示数字键盘
     private var shouldShowKeypad: Bool {
@@ -114,21 +115,6 @@ struct ManualInputView: View {
                                     }
                                     
                                     Spacer()
-                                    
-                                    VStack(spacing: 8) {
-                                        ZStack {
-                                            Circle()
-                                                .fill(colorScheme == .dark ? Color.gray.opacity(0.2) : Color.gray.opacity(0.1))
-                                                .frame(width: 48, height: 48)
-                                            Image(systemName: "camera")
-                                                .font(.system(size: 20))
-                                                .foregroundColor(.gray)
-                                        }
-                                        
-                                        Text("拍照")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(.secondary)
-                                    }
                                 }
                                 .padding(.horizontal, 24)
                                 .padding(.vertical, 24)
@@ -153,6 +139,7 @@ struct ManualInputView: View {
                                 Button(action: {
                                     notesFieldFocused = false  // 隐藏备注键盘
                                     currentEditingField = .electricityKwh
+                                    shouldClearOnNextInput = true // 下次输入时清空
                                 }) {
                                     DetailInputRow(
                                         icon: "bolt",
@@ -166,6 +153,7 @@ struct ManualInputView: View {
                                 Button(action: {
                                     notesFieldFocused = false  // 隐藏备注键盘
                                     currentEditingField = .electricityAmount
+                                    shouldClearOnNextInput = true // 下次输入时清空
                                 }) {
                                     DetailInputRow(
                                         icon: "yensign",
@@ -179,6 +167,7 @@ struct ManualInputView: View {
                                 Button(action: {
                                     notesFieldFocused = false  // 隐藏备注键盘
                                     currentEditingField = .serviceFee
+                                    shouldClearOnNextInput = true // 下次输入时清空
                                 }) {
                                     DetailInputRow(
                                         icon: "hand.raised",
@@ -192,6 +181,7 @@ struct ManualInputView: View {
                                 Button(action: {
                                     notesFieldFocused = false  // 隐藏备注键盘
                                     currentEditingField = .discountAmount
+                                    shouldClearOnNextInput = true // 下次输入时清空
                                 }) {
                                     DetailInputRow(
                                         icon: "tag.fill",
@@ -218,6 +208,7 @@ struct ManualInputView: View {
                                 Button(action: {
                                     notesFieldFocused = false  // 隐藏备注键盘
                                     currentEditingField = .parkingFee
+                                    shouldClearOnNextInput = true // 下次输入时清空
                                 }) {
                                     DetailInputRow(
                                         icon: "parkingsign",
@@ -231,6 +222,7 @@ struct ManualInputView: View {
                                 Button(action: {
                                     notesFieldFocused = false  // 隐藏备注键盘
                                     currentEditingField = .points
+                                    shouldClearOnNextInput = true // 下次输入时清空
                                 }) {
                                     DetailInputRow(
                                         icon: "star.fill",
@@ -267,6 +259,12 @@ struct ManualInputView: View {
                                         .foregroundColor(.secondary)
                                         .multilineTextAlignment(.trailing)
                                         .focused($notesFieldFocused)
+                                        .onChange(of: notesFieldFocused) { _, isFocused in
+                                            if isFocused {
+                                                // 当备注获得焦点时，隐藏数字键盘
+                                                currentEditingField = nil
+                                            }
+                                        }
                                 }
                                 .padding(.horizontal, 24)
                                 .padding(.vertical, 12)
@@ -494,6 +492,28 @@ struct ManualInputView: View {
     
     // 处理数字输入
     private func handleKeypadInput(_ digit: String) {
+        // 如果需要清空，先清空对应字段
+        if shouldClearOnNextInput {
+            switch currentEditingField {
+            case .electricityAmount:
+                electricityAmount = ""
+            case .serviceFee:
+                serviceFee = ""
+            case .electricityKwh:
+                electricityKwh = ""
+            case .parkingFee:
+                parkingFee = ""
+            case .discountAmount:
+                discountAmount = ""
+            case .points:
+                points = ""
+            case .none:
+                break
+            }
+            shouldClearOnNextInput = false
+        }
+        
+        // 正常输入逻辑
         switch currentEditingField {
         case .electricityAmount:
             if digit == "." && electricityAmount.contains(".") { return }
