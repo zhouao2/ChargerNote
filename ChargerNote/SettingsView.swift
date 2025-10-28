@@ -415,19 +415,22 @@ struct SettingsView: View {
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         
         // 构建 CSV 内容
-        var csvContent = "日期,充电地点,充电度数(kWh),电费金额,服务费,总金额,停车费,备注\n"
+        var csvContent = "日期,充电地点,充电度数(kWh),电费金额,服务费,总金额,停车费,优惠金额,积分,极能度数(kWh),备注\n"
         
         for record in chargingRecords.sorted(by: { $0.chargingTime > $1.chargingTime }) {
             let date = dateFormatter.string(from: record.chargingTime)
             let location = record.location
             let electricityAmount = String(format: "%.1f", record.electricityAmount)
-            let amount = String(format: "%.2f", record.amount) // 修复：使用 record.amount 而不是 record.electricityAmount
+            let amount = String(format: "%.2f", record.amount)
             let serviceFee = String(format: "%.2f", record.serviceFee)
             let totalAmount = String(format: "%.2f", record.totalAmount)
             let parkingFee = String(format: "%.2f", record.parkingFee)
+            let discountAmount = String(format: "%.2f", record.discountAmount)
+            let points = String(format: "%.0f", record.points)
+            let extremeEnergyKwh = String(format: "%.3f", record.extremeEnergyKwh)
             let notes = record.notes.isEmpty ? "无" : record.notes
             
-            csvContent += "\(date),\(location),\(electricityAmount),\(amount),\(serviceFee),\(totalAmount),\(parkingFee),\(notes)\n"
+            csvContent += "\(date),\(location),\(electricityAmount),\(amount),\(serviceFee),\(totalAmount),\(parkingFee),\(discountAmount),\(points),\(extremeEnergyKwh),\(notes)\n"
         }
         
         // 保存到临时文件并打开分享
@@ -489,6 +492,9 @@ struct SettingsView: View {
                     "totalAmount": Double(String(format: "%.3f", record.totalAmount)) ?? record.totalAmount,
                     "chargingTime": record.chargingTime.timeIntervalSince1970,
                     "parkingFee": Double(String(format: "%.3f", record.parkingFee)) ?? record.parkingFee,
+                    "discountAmount": Double(String(format: "%.3f", record.discountAmount)) ?? record.discountAmount,
+                    "points": record.points,
+                    "extremeEnergyKwh": Double(String(format: "%.3f", record.extremeEnergyKwh)) ?? record.extremeEnergyKwh,
                     "notes": record.notes,
                     "stationType": record.stationType,
                     "recordType": record.recordType
@@ -613,6 +619,11 @@ struct SettingsView: View {
                     let totalAmount = (totalAmountValue as? Double) ?? 0.0
                     let parkingFee = (parkingFeeValue as? Double) ?? 0.0
                     
+                    // 处理新字段（向后兼容：如果备份文件中没有这些字段，使用默认值0）
+                    let discountAmount = (recordData["discountAmount"] as? Double) ?? 0.0
+                    let points = (recordData["points"] as? Double) ?? 0.0
+                    let extremeEnergyKwh = (recordData["extremeEnergyKwh"] as? Double) ?? 0.0
+                    
                     let chargingTime = Date(timeIntervalSince1970: chargingTimeInterval)
                     
                     let record = ChargingRecord(
@@ -625,7 +636,10 @@ struct SettingsView: View {
                         parkingFee: parkingFee,
                         notes: notes,
                         stationType: stationType,
-                        recordType: recordType
+                        recordType: recordType,
+                        points: points,
+                        discountAmount: discountAmount,
+                        extremeEnergyKwh: extremeEnergyKwh
                     )
                     
                     modelContext.insert(record)
