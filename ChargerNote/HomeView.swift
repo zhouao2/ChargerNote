@@ -1189,16 +1189,34 @@ struct HomeView: View {
             
             // 3. 提取充电站名称（多种匹配策略）
             if location.isEmpty {
-                // 策略1: 检查"充电站点"关键词
+                // 策略1: 检查"充电站点"关键词，并在后续几行中查找真正的站点名
                 if trimmedLine.contains("充电站点") {
-                    // 检查下一行
-                    if index + 1 < lines.count {
+                    // 向下查找最多5行，找到包含"充电站"的行
+                    var foundStation = false
+                    for offset in 1...min(5, lines.count - index - 1) {
+                        let checkLine = lines[index + offset].trimmingCharacters(in: .whitespaces)
+                        // 优先查找包含"充电站"的行
+                        if checkLine.contains("充电站") && !checkLine.contains("充电站点") {
+                            if checkLine.count > 5 && checkLine.count < 60 {
+                                if !checkLine.contains("¥") && !checkLine.contains("订单") && !checkLine.contains(":") && !checkLine.contains("：") {
+                                    location = checkLine
+                                    print("✅ 提取到充电站（策略1-充电站点关键词后）: \(location)")
+                                    foundStation = true
+                                    break
+                                }
+                            }
+                        }
+                    }
+                    // 如果没找到包含"充电站"的行，则使用下一行（但排除明显错误的）
+                    if !foundStation && index + 1 < lines.count {
                         let nextLine = lines[index + 1].trimmingCharacters(in: .whitespaces)
                         if !nextLine.isEmpty && nextLine.count > 3 && nextLine.count < 60 {
                             // 排除明显不是站点名的行
-                            if !nextLine.contains("¥") && !nextLine.contains("订单") && !nextLine.contains("充电时长") && !nextLine.contains("充电桩号") {
+                            if !nextLine.contains("¥") && !nextLine.contains("订单") && !nextLine.contains("充电时长") && 
+                               !nextLine.contains("充电桩号") && !nextLine.contains("充电桩") && !nextLine.contains("桩枪") && 
+                               !nextLine.contains("电桩") && !nextLine.contains("枪") && !nextLine.contains("复制") {
                                 location = nextLine
-                                print("✅ 提取到充电站（策略1-充电站点）: \(location)")
+                                print("✅ 提取到充电站（策略1-下一行）: \(location)")
                             }
                         }
                     }
