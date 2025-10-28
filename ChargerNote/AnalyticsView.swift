@@ -156,6 +156,29 @@ struct AnalyticsView: View {
                                 }
                                 .padding(.horizontal, 24)
                                 
+                                // 第三行统计卡片 - 积分和极能
+                                HStack(spacing: 16) {
+                                    StatisticCard(
+                                        title: "积分支出",
+                                        value: String(format: "%.0f", filteredRecords.reduce(0) { $0 + $1.points }),
+                                        change: "",
+                                        changeColor: .orange,
+                                        icon: "star.fill"
+                                    )
+                                    
+                                    StatisticCard(
+                                        title: "电卡",
+                                        value: {
+                                            let totalExtremeEnergy = filteredRecords.reduce(0) { $0 + $1.extremeEnergyKwh }
+                                            return String(format: "%.2f kWh", totalExtremeEnergy)
+                                        }(),
+                                        change: "",
+                                        changeColor: .purple,
+                                        icon: "bolt.badge.automatic.fill"
+                                    )
+                                }
+                                .padding(.horizontal, 24)
+                                
                                 // 趋势图
                                 TrendChartView(
                                     dataPoints: dataManager.getTrendData(filteredRecords, timeRange: selectedTimeRange),
