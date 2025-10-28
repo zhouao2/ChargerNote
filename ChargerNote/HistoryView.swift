@@ -165,7 +165,8 @@ struct HistoryView: View {
     
     private var monthYearFormatter: DateFormatter {
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy年M月"
+        let isChineseLanguage = Locale.current.language.languageCode?.identifier == "zh"
+        formatter.dateFormat = isChineseLanguage ? "yyyy年M月" : "MMM yyyy"
         return formatter
     }
     
@@ -413,7 +414,7 @@ struct HistoryRecordRow: View {
                     
                     // 记录类型标签（非充电时显示）
                     if record.recordType != "充电" {
-                        Text(record.recordType)
+                        Text(localizedRecordType)
                             .font(.system(size: 10, weight: .medium))
                             .foregroundColor(.white)
                             .padding(.horizontal, 6)
@@ -457,12 +458,12 @@ struct HistoryRecordRow: View {
                 if record.recordType == "充值" {
                     // 充值显示度数/元比例
                     if record.amount > 0 {
-                        Text("约\(currencySymbol)\(String(format: "%.2f", record.amount / record.electricityAmount))/度")
+                        Text("\(L("text.approx"))\(currencySymbol)\(String(format: "%.2f", record.amount / record.electricityAmount))\(L("text.per_kwh"))")
                             .font(.system(size: 12))
                             .foregroundColor(.secondary)
                     }
                 } else {
-                    Text(record.serviceFee > 0 ? "服务费\(currencySymbol)\(String(format: "%.0f", record.serviceFee))" : "无服务费")
+                    Text(record.serviceFee > 0 ? "\(L("text.service_fee"))\(currencySymbol)\(String(format: "%.0f", record.serviceFee))" : L("text.no_service_fee"))
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                 }
@@ -501,6 +502,22 @@ struct HistoryRecordRow: View {
             return .red
         default:
             return .blue
+        }
+    }
+    
+    // 翻译记录类型显示文本
+    private var localizedRecordType: String {
+        switch record.recordType {
+        case "充电":
+            return L("record_type.charge")
+        case "充值":
+            return L("record_type.recharge")
+        case "换电":
+            return L("record_type.battery_swap")
+        case "维修":
+            return L("record_type.maintenance")
+        default:
+            return record.recordType
         }
     }
     

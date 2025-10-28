@@ -112,7 +112,7 @@ struct AnalyticsView: View {
                                 // 第一行：3个主卡片
                                 HStack(spacing: 8) {
                                     StatisticCard(
-                                        title: selectedTimeRange == .week ? "支出" : selectedTimeRange == .month ? "支出" : "支出",
+                                        title: L("analytics.total_expense"),
                                         value: "\(currencySymbol)\(String(format: "%.0f", filteredRecords.reduce(0) { $0 + $1.totalAmount }))",
                                         change: "",
                                         changeColor: .green,
@@ -120,7 +120,7 @@ struct AnalyticsView: View {
                                     )
                                     
                                     StatisticCard(
-                                        title: "充电度数",
+                                        title: L("analytics.total_kwh"),
                                         value: String(format: "%.1f", filteredRecords.reduce(0) { $0 + $1.electricityAmount }),
                                         change: "",
                                         changeColor: .orange,
@@ -128,7 +128,7 @@ struct AnalyticsView: View {
                                     )
                                     
                                     StatisticCard(
-                                        title: "电卡余额",
+                                        title: L("analytics.card_balance"),
                                         value: {
                                             // 计算所有充值记录获得的度数
                                             let totalRecharged = chargingRecords

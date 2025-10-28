@@ -277,7 +277,7 @@ struct ManualInputView: View {
                                             Spacer()
                                             
                                             if let amount = Double(electricityAmount), let kwh = Double(electricityKwh), kwh > 0 {
-                                                Text("约\(currencySymbol)\(String(format: "%.2f", amount/kwh))/度")
+                                                Text("\(L("text.approx"))\(currencySymbol)\(String(format: "%.2f", amount/kwh))\(L("text.per_kwh"))")
                                                     .font(.system(size: 12))
                                                     .foregroundColor(.secondary)
                                             }
@@ -453,7 +453,7 @@ struct ManualInputView: View {
                                     
                                     Spacer()
                                     
-                                    TextField("点击输入", text: $notes)
+                                    TextField(L("text.click_to_input"), text: $notes)
                                         .font(.system(size: 16))
                                         .foregroundColor(notes.isEmpty ? .secondary : .primary)
                                         .multilineTextAlignment(.trailing)
@@ -535,7 +535,7 @@ struct ManualInputView: View {
                                             currentEditingField = nil
                                         }
                                     }) {
-                                        Text("完成")
+                                        Text(L("text.done"))
                                             .font(.system(size: 16, weight: .semibold))
                                             .foregroundColor(.white)
                                             .frame(maxWidth: .infinity)
@@ -674,9 +674,10 @@ struct ManualInputView: View {
     }
     
     // 格式化值显示
-    private func formatValue(_ value: String, prefix: String = "", suffix: String = "", defaultText: String = "未输入") -> String {
+    private func formatValue(_ value: String, prefix: String = "", suffix: String = "", defaultText: String = "") -> String {
+        let defaultDisplay = defaultText.isEmpty ? L("text.not_entered") : defaultText
         if value.isEmpty || value == "0.00" || value == "0.0" || value == "0" {
-            return defaultText
+            return defaultDisplay
         }
         return "\(prefix)\(value)\(suffix)"
     }
@@ -690,7 +691,7 @@ struct ManualInputView: View {
         if let kwh = Double(value) {
             return String(format: "%.3f kWh", kwh)
         }
-        return "未识别"
+        return L("text.unrecognized")
     }
     
     // 计算属性：显示金额
@@ -875,11 +876,14 @@ struct ManualInputView: View {
         let formatter = DateFormatter()
         
         if calendar.isDateInToday(date) {
-            formatter.dateFormat = "今天 HH:mm"
+            let isChineseLanguage = Locale.current.language.languageCode?.identifier == "zh"
+            formatter.dateFormat = isChineseLanguage ? "今天 HH:mm" : "'Today' HH:mm"
         } else if calendar.isDateInYesterday(date) {
-            formatter.dateFormat = "昨天 HH:mm"
+            let isChineseLanguage = Locale.current.language.languageCode?.identifier == "zh"
+            formatter.dateFormat = isChineseLanguage ? "昨天 HH:mm" : "'Yesterday' HH:mm"
         } else {
-            formatter.dateFormat = "M月d日 HH:mm"
+            let isChineseLanguage = Locale.current.language.languageCode?.identifier == "zh"
+            formatter.dateFormat = isChineseLanguage ? "M月d日 HH:mm" : "MMM d HH:mm"
         }
         
         return formatter.string(from: date)
@@ -1049,7 +1053,7 @@ struct DatePickerView: View {
     var body: some View {
         NavigationView {
             VStack {
-                DatePicker("选择时间", selection: $tempDate, displayedComponents: [.date, .hourAndMinute])
+                DatePicker(L("text.select_time"), selection: $tempDate, displayedComponents: [.date, .hourAndMinute])
                     .datePickerStyle(.graphical)
                     .labelsHidden()
                     .padding()
@@ -1060,7 +1064,7 @@ struct DatePickerView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("取消") {
+                    Button(L("text.cancel")) {
                         dismiss()
                     }
                 }

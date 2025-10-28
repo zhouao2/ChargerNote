@@ -107,6 +107,8 @@
 "analytics.points_consumed" = "积分消耗";
 "analytics.times_charged" = "次充电";
 "analytics.no_data" = "暂无数据";
+"analytics.total_expense" = "支出";
+"analytics.total_kwh" = "充电度数";
 
 // MARK: - Settings View
 "settings.title" = "设置";
@@ -179,4 +181,28 @@
 "date.friday" = "周五";
 "date.saturday" = "周六";
 "date.sunday" = "周日";
+"date.week_%d" = "第%d周";
+"date.unknown" = "未知";
+
+// MARK: - Record Type
+"record_type.charge" = "充电";
+"record_type.recharge" = "充值";
+"record_type.battery_swap" = "换电";
+"record_type.maintenance" = "维修";
+
+// MARK: - Common Text
+"text.approx" = "约";
+"text.per_kwh" = "/度";
+"text.service_fee" = "服务费";
+"text.no_service_fee" = "无服务费";
+"text.unrecognized" = "未识别";
+"text.not_entered" = "未输入";
+"text.please_wait" = "请稍候...";
+"text.loading_image" = "正在加载图片";
+"text.recognizing_text" = "正在识别文字";
+"text.extracting_info" = "正在提取充电信息";
+"text.cancel" = "取消";
+"text.done" = "完成";
+"text.select_time" = "选择时间";
+"text.click_to_input" = "点击输入";
 

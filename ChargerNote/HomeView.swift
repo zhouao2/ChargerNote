@@ -233,7 +233,7 @@ struct HomeView: View {
                                     .foregroundColor(.white)
                                     .multilineTextAlignment(.center)
                                 
-                                Text("请稍候...")
+                                Text(L("text.please_wait"))
                                     .font(.system(size: 14))
                                     .foregroundColor(.white.opacity(0.8))
                             }
@@ -388,7 +388,7 @@ struct HomeView: View {
     private func processImage(_ image: UIImage) {
         withAnimation {
             isProcessingImage = true
-            processingStatus = "正在加载图片"
+            processingStatus = L("text.loading_image")
         }
         
         guard let cgImage = image.cgImage else {
@@ -401,7 +401,7 @@ struct HomeView: View {
         // 延迟一下，让用户看到状态更新
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             withAnimation {
-                processingStatus = "正在识别文字"
+                processingStatus = L("text.recognizing_text")
             }
         }
         
@@ -434,7 +434,7 @@ struct HomeView: View {
             
             DispatchQueue.main.async {
                 withAnimation {
-                    self.processingStatus = "正在提取充电信息"
+                    self.processingStatus = L("text.extracting_info")
                 }
                 
                 // 延迟一下让用户看到状态

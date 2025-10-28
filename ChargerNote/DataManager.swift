@@ -89,16 +89,32 @@ class DataManager {
             guard let date = dateFormatter.date(from: dateString) else { continue }
             
             let displayFormatter = DateFormatter()
-            displayFormatter.dateFormat = "M月d日 EEEE"
-            displayFormatter.locale = Locale(identifier: "zh_CN")
-            let displayDate = displayFormatter.string(from: date)
-                .replacingOccurrences(of: "Monday", with: "周一")
-                .replacingOccurrences(of: "Tuesday", with: "周二")
-                .replacingOccurrences(of: "Wednesday", with: "周三")
-                .replacingOccurrences(of: "Thursday", with: "周四")
-                .replacingOccurrences(of: "Friday", with: "周五")
-                .replacingOccurrences(of: "Saturday", with: "周六")
-                .replacingOccurrences(of: "Sunday", with: "周日")
+            let isChineseLanguage = Locale.current.language.languageCode?.identifier == "zh"
+            
+            if isChineseLanguage {
+                displayFormatter.dateFormat = "M月d日 EEEE"
+                displayFormatter.locale = Locale(identifier: "zh_CN")
+            } else {
+                displayFormatter.dateFormat = "MMM d, EEEE"
+                displayFormatter.locale = Locale(identifier: "en_US")
+            }
+            
+            var displayDate = displayFormatter.string(from: date)
+            
+            // 替换星期几为本地化文本
+            let dayReplacements = [
+                "Monday": L("date.monday"),
+                "Tuesday": L("date.tuesday"),
+                "Wednesday": L("date.wednesday"),
+                "Thursday": L("date.thursday"),
+                "Friday": L("date.friday"),
+                "Saturday": L("date.saturday"),
+                "Sunday": L("date.sunday")
+            ]
+            
+            for (english, localized) in dayReplacements {
+                displayDate = displayDate.replacingOccurrences(of: english, with: localized)
+            }
             
             let totalAmount = dayRecords.reduce(0) { $0 + $1.totalAmount }
             let sortedRecords = dayRecords.sorted { $0.chargingTime > $1.chargingTime }
@@ -121,15 +137,25 @@ class DataManager {
     }
     
     private func parseDate(from displayString: String) -> Date? {
-        // 从 "1月15日 周一" 格式提取日期
+        // 从 "1月15日 周一" 或 "Jan 15, Mon" 格式提取日期
         let components = displayString.components(separatedBy: " ")
         guard let dateComponent = components.first else { return nil }
         
         let formatter = DateFormatter()
-        formatter.dateFormat = "M月d日"
-        formatter.locale = Locale(identifier: "zh_CN")
+        let isChineseLanguage = Locale.current.language.languageCode?.identifier == "zh"
         
-        return formatter.date(from: dateComponent)
+        if isChineseLanguage {
+            formatter.dateFormat = "M月d日"
+            formatter.locale = Locale(identifier: "zh_CN")
+        } else {
+            formatter.dateFormat = "MMM d,"
+            formatter.locale = Locale(identifier: "en_US")
+        }
+        
+        // 对于英文，需要拼接前两个部分 "Jan 15,"
+        let dateString = isChineseLanguage ? dateComponent : components.prefix(2).joined(separator: " ")
+        
+        return formatter.date(from: dateString)
     }
     
     // 获取今日记录
@@ -224,7 +250,7 @@ class DataManager {
                 }
                 
                 let totalAmount = weekRecords.reduce(0) { $0 + $1.totalAmount }
-                let label = "第\(weekIndex + 1)周"
+                let label = String(format: L("date.week_%d"), weekIndex + 1)
                 
                 trendData.append(TrendDataPoint(
                     date: weekStart,
@@ -254,7 +280,8 @@ class DataManager {
                 }
                 
                 let totalAmount = monthRecords.reduce(0) { $0 + $1.totalAmount }
-                let label = formatDateLabel(monthStart, format: "M月")
+                let isChineseLanguage = Locale.current.language.languageCode?.identifier == "zh"
+                let label = formatDateLabel(monthStart, format: isChineseLanguage ? "M月" : "MMM")
                 
                 trendData.append(TrendDataPoint(
                     date: monthStart,
@@ -328,7 +355,7 @@ class DataManager {
                 }
                 
                 let totalKwh = weekRecords.reduce(0) { $0 + $1.electricityAmount }
-                let label = "第\(weekIndex + 1)周"
+                let label = String(format: L("date.week_%d"), weekIndex + 1)
                 
                 trendData.append(TrendDataPoint(
                     date: weekStart,
@@ -358,7 +385,8 @@ class DataManager {
                 }
                 
                 let totalKwh = monthRecords.reduce(0) { $0 + $1.electricityAmount }
-                let label = formatDateLabel(monthStart, format: "M月")
+                let isChineseLanguage = Locale.current.language.languageCode?.identifier == "zh"
+                let label = formatDateLabel(monthStart, format: isChineseLanguage ? "M月" : "MMM")
                 
                 trendData.append(TrendDataPoint(
                     date: monthStart,
@@ -392,13 +420,20 @@ class DataManager {
     private func getDayName(for date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEEE"
-        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.locale = Locale(identifier: "en_US")
         
-        let dayNames = ["Sunday": "周日", "Monday": "周一", "Tuesday": "周二", 
-                       "Wednesday": "周三", "Thursday": "周四", "Friday": "周五", "Saturday": "周六"]
+        let dayNames = [
+            "Sunday": L("date.sunday"),
+            "Monday": L("date.monday"),
+            "Tuesday": L("date.tuesday"), 
+            "Wednesday": L("date.wednesday"),
+            "Thursday": L("date.thursday"),
+            "Friday": L("date.friday"),
+            "Saturday": L("date.saturday")
+        ]
         
         let englishDay = formatter.string(from: date)
-        return dayNames[englishDay] ?? "未知"
+        return dayNames[englishDay] ?? L("date.unknown")
     }
 }
 

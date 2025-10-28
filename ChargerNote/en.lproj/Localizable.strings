@@ -107,6 +107,8 @@
 "analytics.points_consumed" = "Points Consumed";
 "analytics.times_charged" = " Times";
 "analytics.no_data" = "No Data";
+"analytics.total_expense" = "Expense";
+"analytics.total_kwh" = "kWh";
 
 // MARK: - Settings View
 "settings.title" = "Settings";
@@ -179,4 +181,28 @@
 "date.friday" = "Fri";
 "date.saturday" = "Sat";
 "date.sunday" = "Sun";
+"date.week_%d" = "Week %d";
+"date.unknown" = "Unknown";
+
+// MARK: - Record Type
+"record_type.charge" = "Charge";
+"record_type.recharge" = "Recharge";
+"record_type.battery_swap" = "Battery Swap";
+"record_type.maintenance" = "Maintenance";
+
+// MARK: - Common Text
+"text.approx" = "≈";
+"text.per_kwh" = "/kWh";
+"text.service_fee" = "Service Fee";
+"text.no_service_fee" = "No Service Fee";
+"text.unrecognized" = "Unrecognized";
+"text.not_entered" = "Not Entered";
+"text.please_wait" = "Please wait...";
+"text.loading_image" = "Loading image";
+"text.recognizing_text" = "Recognizing text";
+"text.extracting_info" = "Extracting charging info";
+"text.cancel" = "Cancel";
+"text.done" = "Done";
+"text.select_time" = "Select Time";
+"text.click_to_input" = "Click to input";
 
