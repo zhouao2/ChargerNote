@@ -394,38 +394,78 @@ struct HistoryRecordRow: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            // 图标
+            // 图标 - 根据记录类型显示不同图标
             ZStack {
                 Circle()
                     .fill(iconBackgroundColor)
                     .frame(width: 40, height: 40)
-                Image(systemName: "bolt.circle.fill")
+                Image(systemName: recordTypeIcon)
                     .font(.system(size: 20))
                     .foregroundColor(iconColor)
             }
             
             // 信息
             VStack(alignment: .leading, spacing: 4) {
-                Text(record.location)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.primary)
+                HStack(spacing: 6) {
+                    Text(record.location)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.primary)
+                    
+                    // 记录类型标签（非充电时显示）
+                    if record.recordType != "充电" {
+                        Text(record.recordType)
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(recordTypeLabelColor)
+                            )
+                    }
+                }
                 
-                Text("\(formatTime(record.chargingTime)) • \(String(format: "%.1f", record.electricityAmount))度电")
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
+                // 第二行信息 - 根据记录类型显示不同内容
+                if record.recordType == "充值" {
+                    Text("\(formatTime(record.chargingTime)) • 获得\(String(format: "%.1f", record.electricityAmount))度")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                } else {
+                    Text("\(formatTime(record.chargingTime)) • \(String(format: "%.1f", record.electricityAmount))度电")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
             }
             
             Spacer()
             
-            // 金额
+            // 金额 - 根据记录类型显示不同颜色和信息
             VStack(alignment: .trailing, spacing: 4) {
-                Text("\(currencySymbol)\(String(format: "%.2f", record.totalAmount))")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
+                if record.recordType == "充值" {
+                    // 充值显示为绿色
+                    Text("+\(currencySymbol)\(String(format: "%.2f", record.amount))")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.green)
+                } else {
+                    // 其他类型显示为常规色
+                    Text("\(currencySymbol)\(String(format: "%.2f", record.totalAmount))")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                }
                 
-                Text(record.serviceFee > 0 ? "服务费\(currencySymbol)\(String(format: "%.0f", record.serviceFee))" : "无服务费")
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
+                // 第二行金额信息
+                if record.recordType == "充值" {
+                    // 充值显示度数/元比例
+                    if record.amount > 0 {
+                        Text("约\(currencySymbol)\(String(format: "%.2f", record.amount / record.electricityAmount))/度")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+                } else {
+                    Text(record.serviceFee > 0 ? "服务费\(currencySymbol)\(String(format: "%.0f", record.serviceFee))" : "无服务费")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
             }
         }
         .padding(16)
@@ -434,6 +474,34 @@ struct HistoryRecordRow: View {
                 .fill(Color.cardBackground(for: colorScheme))
                 .shadow(color: Color.cardShadow(for: colorScheme), radius: 10, x: 0, y: 4)
         )
+    }
+    
+    // 根据记录类型返回对应图标
+    private var recordTypeIcon: String {
+        switch record.recordType {
+        case "充值":
+            return "creditcard.fill"
+        case "换电":
+            return "arrow.triangle.2.circlepath"
+        case "维修":
+            return "wrench.fill"
+        default: // "充电"
+            return "bolt.circle.fill"
+        }
+    }
+    
+    // 记录类型标签颜色
+    private var recordTypeLabelColor: Color {
+        switch record.recordType {
+        case "充值":
+            return .green
+        case "换电":
+            return .orange
+        case "维修":
+            return .red
+        default:
+            return .blue
+        }
     }
     
     private var iconBackgroundColor: Color {

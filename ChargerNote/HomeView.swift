@@ -332,6 +332,58 @@ struct HomeView: View {
         print("创建新站点: \(name)")
     }
     
+    // MARK: - 算法类型枚举
+    enum AlgorithmType {
+        case algorithm1  // 原有算法（支持优惠、积分、极能）
+        case algorithm2  // 新算法（订单详情样式）
+    }
+    
+    // MARK: - 智能检测算法类型
+    private func detectAlgorithmType(_ text: String) -> AlgorithmType {
+        // 算法2的特征关键词
+        let algorithm2Keywords = [
+            "订单详情",
+            "订单已完成",
+            "订单总金额",
+            "电费:¥",
+            "服务费:¥"
+        ]
+        
+        // 算法1的特征关键词
+        let algorithm1Keywords = [
+            "费用明细",
+            "优惠券",
+            "极分抵扣",
+            "积分抵扣",
+            "极能抵扣"
+        ]
+        
+        var algorithm2Score = 0
+        var algorithm1Score = 0
+        
+        for keyword in algorithm2Keywords {
+            if text.contains(keyword) {
+                algorithm2Score += 1
+            }
+        }
+        
+        for keyword in algorithm1Keywords {
+            if text.contains(keyword) {
+                algorithm1Score += 1
+            }
+        }
+        
+        print("📊 算法检测分数 - 算法1: \(algorithm1Score), 算法2: \(algorithm2Score)")
+        
+        // 如果算法2得分更高，使用算法2
+        if algorithm2Score > algorithm1Score && algorithm2Score >= 2 {
+            return .algorithm2
+        }
+        
+        // 默认使用算法1
+        return .algorithm1
+    }
+    
     // 处理图片并进行 OCR 识别
     private func processImage(_ image: UIImage) {
         withAnimation {
@@ -387,7 +439,16 @@ struct HomeView: View {
                 
                 // 延迟一下让用户看到状态
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    self.extractDataFromText(recognizedText)
+                    // 智能选择识别算法
+                    let algorithmType = self.detectAlgorithmType(recognizedText)
+                    print("🤖 检测到算法类型: \(algorithmType == .algorithm1 ? "算法1" : "算法2")")
+                    
+                    if algorithmType == .algorithm2 {
+                        self.extractDataFromText_Algorithm2(recognizedText)
+                    } else {
+                        self.extractDataFromText(recognizedText)
+                    }
+                    
                     withAnimation {
                         self.isProcessingImage = false
                     }
@@ -1068,6 +1129,328 @@ struct HomeView: View {
             }
         } else {
             // 未识别到站点，直接打开输入页面
+            showingManualInput = true
+        }
+    }
+    
+    // MARK: - 算法2：订单详情样式识别
+    private func extractDataFromText_Algorithm2(_ text: String) {
+        print("\n🆕 ========== 开始使用算法2识别（订单详情样式）==========")
+        
+        var electricityAmount: String = ""
+        var serviceFee: String = ""
+        let electricityKwh: String = ""  // 算法2暂不提取度数
+        var location: String = ""
+        var totalAmount: String = ""
+        var chargingTime: Date?
+        
+        let lines = text.components(separatedBy: .newlines)
+        
+        // 提取实付金额（订单总金额）
+        for (index, line) in lines.enumerated() {
+            let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+            
+            // 1. 提取实付金额（在"实付金额"或"订单总金额"附近）
+            if totalAmount.isEmpty {
+                if trimmedLine.contains("实付金额") || trimmedLine.contains("订单总金额") {
+                    // 检查当前行
+                    if let amount = extractNumber(from: trimmedLine) {
+                        totalAmount = String(format: "%.2f", amount)
+                        print("✅ 提取到实付金额（当前行）: ¥\(totalAmount)")
+                    }
+                    // 检查上一行（大数字通常在上面）
+                    else if index > 0 {
+                        let previousLine = lines[index - 1].trimmingCharacters(in: .whitespaces)
+                        if let amount = extractNumber(from: previousLine) {
+                            totalAmount = String(format: "%.2f", amount)
+                            print("✅ 提取到实付金额（上一行）: ¥\(totalAmount)")
+                        }
+                    }
+                }
+            }
+            
+            // 2. 提取电费和服务费（格式: "电费:¥X.XX | 服务费:¥X.XX"）
+            if electricityAmount.isEmpty || serviceFee.isEmpty {
+                if trimmedLine.contains("电费") && trimmedLine.contains("服务费") {
+                    // 使用正则表达式提取
+                    let pattern = #"电费[：:]\s*¥?([0-9.]+).*服务费[：:]\s*¥?([0-9.]+)"#
+                    if let regex = try? NSRegularExpression(pattern: pattern, options: []),
+                       let match = regex.firstMatch(in: trimmedLine, range: NSRange(trimmedLine.startIndex..., in: trimmedLine)) {
+                        if let electricityRange = Range(match.range(at: 1), in: trimmedLine),
+                           let serviceRange = Range(match.range(at: 2), in: trimmedLine) {
+                            electricityAmount = String(trimmedLine[electricityRange])
+                            serviceFee = String(trimmedLine[serviceRange])
+                            print("✅ 提取到电费: ¥\(electricityAmount)")
+                            print("✅ 提取到服务费: ¥\(serviceFee)")
+                        }
+                    }
+                }
+            }
+            
+            // 3. 提取充电站名称（多种匹配策略）
+            if location.isEmpty {
+                // 策略1: 检查"充电站点"关键词
+                if trimmedLine.contains("充电站点") {
+                    // 检查下一行
+                    if index + 1 < lines.count {
+                        let nextLine = lines[index + 1].trimmingCharacters(in: .whitespaces)
+                        if !nextLine.isEmpty && nextLine.count > 3 && nextLine.count < 60 {
+                            // 排除明显不是站点名的行
+                            if !nextLine.contains("¥") && !nextLine.contains("订单") && !nextLine.contains("充电时长") && !nextLine.contains("充电桩号") {
+                                location = nextLine
+                                print("✅ 提取到充电站（策略1-充电站点）: \(location)")
+                            }
+                        }
+                    }
+                }
+                // 策略2: 直接匹配包含"充电站"的行（且长度合适）
+                else if trimmedLine.contains("充电站") && !trimmedLine.contains("充电站点") {
+                    // 确保这行看起来像一个地址/站点名
+                    if trimmedLine.count > 5 && trimmedLine.count < 60 {
+                        // 排除包含特殊字符的行
+                        if !trimmedLine.contains("¥") && !trimmedLine.contains("订单") && !trimmedLine.contains(":") && !trimmedLine.contains("：") {
+                            location = trimmedLine
+                            print("✅ 提取到充电站（策略2-直接匹配）: \(location)")
+                        }
+                    }
+                }
+                // 策略3: 匹配城市地址格式（如"上海市..."、"北京市..."）
+                else if (trimmedLine.contains("市") || trimmedLine.contains("区") || trimmedLine.contains("县")) && 
+                         (trimmedLine.contains("充电") || trimmedLine.contains("东区") || trimmedLine.contains("西区") || 
+                          trimmedLine.contains("南区") || trimmedLine.contains("北区")) {
+                    if trimmedLine.count > 5 && trimmedLine.count < 60 {
+                        if !trimmedLine.contains("¥") && !trimmedLine.contains("订单") {
+                            location = trimmedLine
+                            print("✅ 提取到充电站（策略3-地址格式）: \(location)")
+                        }
+                    }
+                }
+            }
+            
+            // 4. 提取充电时间（多种策略）
+            if chargingTime == nil {
+                var foundTime = false
+                
+                // 策略1: 完整时间格式 "10月1日 21:21:25"
+                let timePattern1 = #"(\d{1,2})月(\d{1,2})日\s+(\d{1,2}):(\d{1,2}):(\d{1,2})"#
+                if let regex1 = try? NSRegularExpression(pattern: timePattern1, options: []),
+                   let match = regex1.firstMatch(in: trimmedLine, range: NSRange(trimmedLine.startIndex..., in: trimmedLine)),
+                   match.numberOfRanges == 6 {
+                    
+                    let month = Int((trimmedLine as NSString).substring(with: match.range(at: 1))) ?? 1
+                    let day = Int((trimmedLine as NSString).substring(with: match.range(at: 2))) ?? 1
+                    let hour = Int((trimmedLine as NSString).substring(with: match.range(at: 3))) ?? 0
+                    let minute = Int((trimmedLine as NSString).substring(with: match.range(at: 4))) ?? 0
+                    let second = Int((trimmedLine as NSString).substring(with: match.range(at: 5))) ?? 0
+                    
+                    let calendar = Calendar.current
+                    let year = calendar.component(.year, from: Date())
+                    var components = DateComponents()
+                    components.year = year
+                    components.month = month
+                    components.day = day
+                    components.hour = hour
+                    components.minute = minute
+                    components.second = second
+                    
+                    if let date = calendar.date(from: components) {
+                        chargingTime = date
+                        let formatter = DateFormatter()
+                        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                        print("✅ 提取到充电时间（策略1-完整格式）: \(formatter.string(from: date))")
+                        foundTime = true
+                    }
+                }
+                
+                // 策略2: 标准格式 "2025-10-01 21:21:25"
+                if !foundTime {
+                    let timePattern2 = #"(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})"#
+                    if let regex2 = try? NSRegularExpression(pattern: timePattern2, options: []),
+                       let match = regex2.firstMatch(in: trimmedLine, range: NSRange(trimmedLine.startIndex..., in: trimmedLine)),
+                       match.numberOfRanges == 7 {
+                        
+                        let year = Int((trimmedLine as NSString).substring(with: match.range(at: 1))) ?? 2025
+                        let month = Int((trimmedLine as NSString).substring(with: match.range(at: 2))) ?? 1
+                        let day = Int((trimmedLine as NSString).substring(with: match.range(at: 3))) ?? 1
+                        let hour = Int((trimmedLine as NSString).substring(with: match.range(at: 4))) ?? 0
+                        let minute = Int((trimmedLine as NSString).substring(with: match.range(at: 5))) ?? 0
+                        let second = Int((trimmedLine as NSString).substring(with: match.range(at: 6))) ?? 0
+                        
+                        var components = DateComponents()
+                        components.year = year
+                        components.month = month
+                        components.day = day
+                        components.hour = hour
+                        components.minute = minute
+                        components.second = second
+                        
+                        if let date = Calendar.current.date(from: components) {
+                            chargingTime = date
+                            let formatter = DateFormatter()
+                            formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                            print("✅ 提取到充电时间（策略2-标准格式）: \(formatter.string(from: date))")
+                            foundTime = true
+                        }
+                    }
+                }
+                
+                // 策略3: 分行时间 - 检查是否是日期行，然后查找下一行的时间
+                if !foundTime {
+                    let datePattern = #"(\d{1,2})月(\d{1,2})日"#
+                    if let dateRegex = try? NSRegularExpression(pattern: datePattern, options: []),
+                       let dateMatch = dateRegex.firstMatch(in: trimmedLine, range: NSRange(trimmedLine.startIndex..., in: trimmedLine)),
+                       dateMatch.numberOfRanges == 3 {
+                        
+                        let month = Int((trimmedLine as NSString).substring(with: dateMatch.range(at: 1))) ?? 1
+                        let day = Int((trimmedLine as NSString).substring(with: dateMatch.range(at: 2))) ?? 1
+                        
+                        // 检查下一行是否是时间 "HH:MM:SS"
+                        if index + 1 < lines.count {
+                            let nextLine = lines[index + 1].trimmingCharacters(in: .whitespaces)
+                            let timeOnlyPattern = #"(\d{1,2}):(\d{1,2}):(\d{1,2})"#
+                            if let timeRegex = try? NSRegularExpression(pattern: timeOnlyPattern, options: []),
+                               let timeMatch = timeRegex.firstMatch(in: nextLine, range: NSRange(nextLine.startIndex..., in: nextLine)),
+                               timeMatch.numberOfRanges == 4 {
+                                
+                                let hour = Int((nextLine as NSString).substring(with: timeMatch.range(at: 1))) ?? 0
+                                let minute = Int((nextLine as NSString).substring(with: timeMatch.range(at: 2))) ?? 0
+                                let second = Int((nextLine as NSString).substring(with: timeMatch.range(at: 3))) ?? 0
+                                
+                                let calendar = Calendar.current
+                                let year = calendar.component(.year, from: Date())
+                                var components = DateComponents()
+                                components.year = year
+                                components.month = month
+                                components.day = day
+                                components.hour = hour
+                                components.minute = minute
+                                components.second = second
+                                
+                                if let date = calendar.date(from: components) {
+                                    chargingTime = date
+                                    let formatter = DateFormatter()
+                                    formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                                    print("✅ 提取到充电时间（策略3-分行格式）: \(formatter.string(from: date))")
+                                    foundTime = true
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // 策略4: 在包含时间关键词的行附近查找
+                if !foundTime && (trimmedLine.contains("充电时间") || trimmedLine.contains("开始时间") || trimmedLine.contains("开始充电")) {
+                    // 检查当前行是否包含时间
+                    let timeOnlyPattern = #"(\d{1,2}):(\d{1,2}):(\d{1,2})"#
+                    if let timeRegex = try? NSRegularExpression(pattern: timeOnlyPattern, options: []),
+                       let timeMatch = timeRegex.firstMatch(in: trimmedLine, range: NSRange(trimmedLine.startIndex..., in: trimmedLine)),
+                       timeMatch.numberOfRanges == 4 {
+                        
+                        let hour = Int((trimmedLine as NSString).substring(with: timeMatch.range(at: 1))) ?? 0
+                        let minute = Int((trimmedLine as NSString).substring(with: timeMatch.range(at: 2))) ?? 0
+                        let second = Int((trimmedLine as NSString).substring(with: timeMatch.range(at: 3))) ?? 0
+                        
+                        // 使用当前日期
+                        let calendar = Calendar.current
+                        let now = Date()
+                        var components = calendar.dateComponents([.year, .month, .day], from: now)
+                        components.hour = hour
+                        components.minute = minute
+                        components.second = second
+                        
+                        if let date = calendar.date(from: components) {
+                            chargingTime = date
+                            let formatter = DateFormatter()
+                            formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                            print("✅ 提取到充电时间（策略4-关键词附近）: \(formatter.string(from: date))")
+                            print("⚠️ 注意：未找到日期，使用今日日期")
+                            foundTime = true
+                        }
+                    }
+                    // 检查下一行
+                    else if index + 1 < lines.count {
+                        let nextLine = lines[index + 1].trimmingCharacters(in: .whitespaces)
+                        if let timeRegex = try? NSRegularExpression(pattern: timeOnlyPattern, options: []),
+                           let timeMatch = timeRegex.firstMatch(in: nextLine, range: NSRange(nextLine.startIndex..., in: nextLine)),
+                           timeMatch.numberOfRanges == 4 {
+                            
+                            let hour = Int((nextLine as NSString).substring(with: timeMatch.range(at: 1))) ?? 0
+                            let minute = Int((nextLine as NSString).substring(with: timeMatch.range(at: 2))) ?? 0
+                            let second = Int((nextLine as NSString).substring(with: timeMatch.range(at: 3))) ?? 0
+                            
+                            let calendar = Calendar.current
+                            let now = Date()
+                            var components = calendar.dateComponents([.year, .month, .day], from: now)
+                            components.hour = hour
+                            components.minute = minute
+                            components.second = second
+                            
+                            if let date = calendar.date(from: components) {
+                                chargingTime = date
+                                let formatter = DateFormatter()
+                                formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                                print("✅ 提取到充电时间（策略4-关键词下一行）: \(formatter.string(from: date))")
+                                print("⚠️ 注意：未找到日期，使用今日日期")
+                                foundTime = true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 如果没有提取到电费和服务费，尝试根据实付金额推算
+        if electricityAmount.isEmpty && serviceFee.isEmpty && !totalAmount.isEmpty {
+            if let total = Double(totalAmount) {
+                // 根据经验，电费通常占总额的60-65%
+                let estimatedElectricity = total * 0.64
+                let estimatedService = total - estimatedElectricity
+                electricityAmount = String(format: "%.2f", estimatedElectricity)
+                serviceFee = String(format: "%.2f", estimatedService)
+                print("⚠️ 未提取到电费和服务费，根据实付金额推算:")
+                print("  - 电费: ¥\(electricityAmount) (约64%)")
+                print("  - 服务费: ¥\(serviceFee) (约36%)")
+            }
+        }
+        
+        // 打印提取结果
+        print("\n📊 算法2提取结果汇总:")
+        print("  - 充电站: \(location.isEmpty ? "未识别" : location)")
+        print("  - 电费: \(electricityAmount.isEmpty ? "未识别" : "¥\(electricityAmount)")")
+        print("  - 服务费: \(serviceFee.isEmpty ? "未识别" : "¥\(serviceFee)")")
+        print("  - 实付: \(totalAmount.isEmpty ? "未识别" : "¥\(totalAmount)")")
+        print("  - 充电时间: \(chargingTime != nil ? "已识别" : "未识别")")
+        
+        // 保存提取的数据
+        extractedData = ExtractedChargingData(
+            electricityAmount: electricityAmount,
+            serviceFee: serviceFee,
+            electricityKwh: electricityKwh,
+            location: location,
+            totalAmount: totalAmount,
+            points: "",  // 算法2通常没有积分
+            notes: "",
+            chargingTime: chargingTime,
+            discountAmount: "",  // 算法2通常没有优惠
+            extremeEnergyKwh: ""  // 算法2通常没有极能
+        )
+        
+        print("✅ ExtractedChargingData 已创建并保存（算法2）")
+        
+        // 如果识别到了站点，检查是否存在
+        if !location.isEmpty {
+            let stationExists = categories.contains { category in
+                category.name == location || category.name.contains(location) || location.contains(category.name)
+            }
+            
+            if !stationExists {
+                recognizedStationName = location
+                showingNewStationAlert = true
+                print("站点 '\(location)' 不存在，询问用户是否创建")
+            } else {
+                showingManualInput = true
+            }
+        } else {
             showingManualInput = true
         }
     }

@@ -94,7 +94,7 @@ struct ManualInputView: View {
                             // 💰 顶部金额区域 - Phase 1 优化
                             VStack(spacing: 12) {
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text("实付金额")
+                                    Text(selectedRecordType == "充值" ? "充值金额" : "实付金额")
                                         .font(.system(size: 14))
                                         .foregroundColor(.secondary)
                                     
@@ -102,18 +102,18 @@ struct ManualInputView: View {
                                     HStack(alignment: .firstTextBaseline, spacing: 4) {
                                         Text(currencySymbol)
                                             .font(.system(size: 24, weight: .light))
-                                            .foregroundColor(.blue)
+                                            .foregroundColor(selectedRecordType == "充值" ? .purple : .blue)
                                         
                                         Text(String(format: "%.2f", calculatedTotalAmount))
                                             .font(.system(size: 48, weight: .light))
-                                            .foregroundColor(.blue)
+                                            .foregroundColor(selectedRecordType == "充值" ? .purple : .blue)
                                             .animation(.spring(response: 0.3), value: calculatedTotalAmount)
                                     }
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 
-                                // Phase 1: 计算公式显示
-                                if hasInputValue {
+                                // Phase 1: 计算公式显示（充值模式不显示）
+                                if selectedRecordType != "充值" && hasInputValue {
                                     HStack(spacing: 4) {
                                         FormulaItem(label: "电费", value: electricityAmount, symbol: currencySymbol, color: .primary)
                                         Text("+")
@@ -140,6 +140,45 @@ struct ManualInputView: View {
                             VStack(spacing: 0) {
                                 SectionHeader(title: "基本信息", icon: "doc.text.fill")
                                 
+                                // 记录类型选择
+                                VStack(spacing: 0) {
+                                    HStack(spacing: 12) {
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 4)
+                                                .fill(colorScheme == .dark ? Color.gray.opacity(0.3) : Color.gray.opacity(0.2))
+                                                .frame(width: 24, height: 24)
+                                            Image(systemName: "square.grid.2x2")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.gray)
+                                        }
+                                        
+                                        Text("记录类型")
+                                            .font(.system(size: 16))
+                                            .foregroundColor(.primary)
+                                        
+                                        Spacer()
+                                        
+                                        // 类型选择按钮
+                                        HStack(spacing: 8) {
+                                            RecordTypeButton(title: "充电", icon: "bolt.fill", isSelected: selectedRecordType == "充电") {
+                                                selectedRecordType = "充电"
+                                            }
+                                            RecordTypeButton(title: "换电", icon: "arrow.triangle.2.circlepath", isSelected: selectedRecordType == "换电") {
+                                                selectedRecordType = "换电"
+                                            }
+                                            RecordTypeButton(title: "维修", icon: "wrench.fill", isSelected: selectedRecordType == "维修") {
+                                                selectedRecordType = "维修"
+                                            }
+                                            RecordTypeButton(title: "充值", icon: "creditcard.fill", isSelected: selectedRecordType == "充值") {
+                                                selectedRecordType = "充值"
+                                            }
+                                        }
+                                    }
+                                    .padding(.horizontal, 24)
+                                    .padding(.vertical, 12)
+                                    .background(Color.cardBackground(for: colorScheme))
+                                }
+                                
                                 Button(action: {
                                     notesFieldFocused = false
                                     currentEditingField = nil
@@ -147,7 +186,7 @@ struct ManualInputView: View {
                                 }) {
                                     DetailInputRow(
                                         icon: "location",
-                                        title: "充电站",
+                                        title: selectedRecordType == "充值" ? "充值平台" : "充电站",
                                         value: location.isEmpty ? "请选择" : location,
                                         hasArrow: true,
                                         isEmpty: location.isEmpty
@@ -161,25 +200,44 @@ struct ManualInputView: View {
                                 }) {
                                     DetailInputRow(
                                         icon: "clock",
-                                        title: "充电时间",
+                                        title: selectedRecordType == "充值" ? "购买时间" : "充电时间",
                                         value: formatDate(chargingTime),
                                         hasArrow: true
                                     )
                                 }
                                 
-                                Button(action: {
-                                    notesFieldFocused = false
-                                    currentEditingField = .electricityKwh
-                                    shouldClearOnNextInput = true
-                                }) {
-                                    DetailInputRow(
-                                        icon: "bolt",
-                                        title: "充电电量",
-                                        value: formatValue(electricityKwh, suffix: " kWh", defaultText: "未输入"),
-                                        hasArrow: false,
-                                        isSelected: currentEditingField == .electricityKwh,
-                                        isEmpty: electricityKwh.isEmpty
-                                    )
+                                // 充电电量/获得度数
+                                if selectedRecordType == "充值" {
+                                    Button(action: {
+                                        notesFieldFocused = false
+                                        currentEditingField = .electricityKwh
+                                        shouldClearOnNextInput = true
+                                    }) {
+                                        DetailInputRow(
+                                            icon: "bolt.badge.automatic",
+                                            title: "获得度数",
+                                            value: formatValue(electricityKwh, suffix: " kWh", defaultText: "未输入"),
+                                            hasArrow: false,
+                                            isSelected: currentEditingField == .electricityKwh,
+                                            valueColor: .purple,
+                                            isEmpty: electricityKwh.isEmpty
+                                        )
+                                    }
+                                } else {
+                                    Button(action: {
+                                        notesFieldFocused = false
+                                        currentEditingField = .electricityKwh
+                                        shouldClearOnNextInput = true
+                                    }) {
+                                        DetailInputRow(
+                                            icon: "bolt",
+                                            title: "充电电量",
+                                            value: formatValue(electricityKwh, suffix: " kWh", defaultText: "未输入"),
+                                            hasArrow: false,
+                                            isSelected: currentEditingField == .electricityKwh,
+                                            isEmpty: electricityKwh.isEmpty
+                                        )
+                                    }
                                 }
                             }
                             .background(Color.cardBackground(for: colorScheme))
@@ -191,82 +249,127 @@ struct ManualInputView: View {
                             
                             // 💰 Phase 1: 费用明细分组
                             VStack(spacing: 0) {
-                                SectionHeader(title: "费用明细", icon: "dollarsign.circle.fill")
+                                SectionHeader(title: selectedRecordType == "充值" ? "充值金额" : "费用明细", icon: "dollarsign.circle.fill")
                                 
-                                Button(action: {
-                                    notesFieldFocused = false
-                                    currentEditingField = .electricityAmount
-                                    shouldClearOnNextInput = true
-                                }) {
-                                    DetailInputRow(
-                                        icon: "yensign",
-                                        title: "电费",
-                                        value: formatValue(electricityAmount, prefix: currencySymbol),
-                                        hasArrow: false,
-                                        isSelected: currentEditingField == .electricityAmount,
-                                        isEmpty: electricityAmount.isEmpty
-                                    )
-                                }
-                                
-                                Button(action: {
-                                    notesFieldFocused = false
-                                    currentEditingField = .serviceFee
-                                    shouldClearOnNextInput = true
-                                }) {
-                                    DetailInputRow(
-                                        icon: "hand.raised",
-                                        title: "服务费",
-                                        value: formatValue(serviceFee, prefix: currencySymbol),
-                                        hasArrow: false,
-                                        isSelected: currentEditingField == .serviceFee,
-                                        isEmpty: serviceFee.isEmpty
-                                    )
-                                }
-                                
-                                Button(action: {
-                                    notesFieldFocused = false
-                                    currentEditingField = .discountAmount
-                                    shouldClearOnNextInput = true
-                                }) {
-                                    DetailInputRow(
-                                        icon: "tag.fill",
-                                        title: "优惠金额",
-                                        value: formatValue(discountAmount, prefix: currencySymbol),
-                                        hasArrow: false,
-                                        isSelected: currentEditingField == .discountAmount,
-                                        valueColor: .green,
-                                        isEmpty: discountAmount.isEmpty || discountAmount == "0.00"
-                                    )
-                                }
-                                
-                                // 实付金额分隔线和显示
-                                Divider()
-                                    .padding(.horizontal, 24)
-                                
-                                HStack(spacing: 12) {
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 4)
-                                            .fill(Color.blue.opacity(0.1))
-                                            .frame(width: 24, height: 24)
-                                        Image(systemName: "equal")
-                                            .font(.system(size: 12, weight: .semibold))
-                                            .foregroundColor(.blue)
+                                // 充值模式：只显示充值金额输入
+                                if selectedRecordType == "充值" {
+                                    Button(action: {
+                                        notesFieldFocused = false
+                                        currentEditingField = .electricityAmount
+                                        shouldClearOnNextInput = true
+                                    }) {
+                                        DetailInputRow(
+                                            icon: "creditcard",
+                                            title: "充值金额",
+                                            value: formatValue(electricityAmount, prefix: currencySymbol),
+                                            hasArrow: false,
+                                            isSelected: currentEditingField == .electricityAmount,
+                                            valueColor: .purple,
+                                            isEmpty: electricityAmount.isEmpty
+                                        )
                                     }
                                     
-                                    Text("实付")
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(.primary)
-                                    
-                                    Spacer()
-                                    
-                                    Text("\(currencySymbol)\(String(format: "%.2f", calculatedTotalAmount))")
-                                        .font(.system(size: 18, weight: .bold))
-                                        .foregroundColor(.blue)
-                                        .animation(.spring(response: 0.3), value: calculatedTotalAmount)
+                                    // 等价信息显示（例如：309元 = 300度）
+                                    if !electricityAmount.isEmpty && !electricityKwh.isEmpty {
+                                        HStack(spacing: 12) {
+                                            Image(systemName: "equal.circle")
+                                                .font(.system(size: 14))
+                                                .foregroundColor(.secondary)
+                                            
+                                            Text("\(currencySymbol)\(electricityAmount) = \(electricityKwh) kWh")
+                                                .font(.system(size: 14))
+                                                .foregroundColor(.secondary)
+                                            
+                                            Spacer()
+                                            
+                                            if let amount = Double(electricityAmount), let kwh = Double(electricityKwh), kwh > 0 {
+                                                Text("约\(currencySymbol)\(String(format: "%.2f", amount/kwh))/度")
+                                                    .font(.system(size: 12))
+                                                    .foregroundColor(.secondary)
+                                            }
+                                        }
+                                        .padding(.horizontal, 24)
+                                        .padding(.vertical, 8)
+                                        .background(Color.purple.opacity(0.05))
+                                    }
                                 }
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 12)
-                                .background(Color.blue.opacity(0.03))
+                                // 充电模式：显示完整费用明细
+                                else {
+                                    Button(action: {
+                                        notesFieldFocused = false
+                                        currentEditingField = .electricityAmount
+                                        shouldClearOnNextInput = true
+                                    }) {
+                                        DetailInputRow(
+                                            icon: "yensign",
+                                            title: "电费",
+                                            value: formatValue(electricityAmount, prefix: currencySymbol),
+                                            hasArrow: false,
+                                            isSelected: currentEditingField == .electricityAmount,
+                                            isEmpty: electricityAmount.isEmpty
+                                        )
+                                    }
+                                    
+                                    Button(action: {
+                                        notesFieldFocused = false
+                                        currentEditingField = .serviceFee
+                                        shouldClearOnNextInput = true
+                                    }) {
+                                        DetailInputRow(
+                                            icon: "hand.raised",
+                                            title: "服务费",
+                                            value: formatValue(serviceFee, prefix: currencySymbol),
+                                            hasArrow: false,
+                                            isSelected: currentEditingField == .serviceFee,
+                                            isEmpty: serviceFee.isEmpty
+                                        )
+                                    }
+                                    
+                                    Button(action: {
+                                        notesFieldFocused = false
+                                        currentEditingField = .discountAmount
+                                        shouldClearOnNextInput = true
+                                    }) {
+                                        DetailInputRow(
+                                            icon: "tag.fill",
+                                            title: "优惠金额",
+                                            value: formatValue(discountAmount, prefix: currencySymbol),
+                                            hasArrow: false,
+                                            isSelected: currentEditingField == .discountAmount,
+                                            valueColor: .green,
+                                            isEmpty: discountAmount.isEmpty || discountAmount == "0.00"
+                                        )
+                                    }
+                                    
+                                    // 实付金额分隔线和显示
+                                    Divider()
+                                        .padding(.horizontal, 24)
+                                    
+                                    HStack(spacing: 12) {
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 4)
+                                                .fill(Color.blue.opacity(0.1))
+                                                .frame(width: 24, height: 24)
+                                            Image(systemName: "equal")
+                                                .font(.system(size: 12, weight: .semibold))
+                                                .foregroundColor(.blue)
+                                        }
+                                        
+                                        Text("实付")
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(.primary)
+                                        
+                                        Spacer()
+                                        
+                                        Text("\(currencySymbol)\(String(format: "%.2f", calculatedTotalAmount))")
+                                            .font(.system(size: 18, weight: .bold))
+                                            .foregroundColor(.blue)
+                                            .animation(.spring(response: 0.3), value: calculatedTotalAmount)
+                                    }
+                                    .padding(.horizontal, 24)
+                                    .padding(.vertical, 12)
+                                    .background(Color.blue.opacity(0.03))
+                                }
                             }
                             .background(Color.cardBackground(for: colorScheme))
                             .cornerRadius(12)
@@ -386,7 +489,7 @@ struct ManualInputView: View {
                         // Phase 2: 数字键盘顶部提示
                         VStack(spacing: 0) {
                             // 当前编辑字段提示
-                            if let field = currentEditingField {
+                            if currentEditingField != nil {
                                 HStack {
                                     Text("正在编辑：\(displayDescription)")
                                         .font(.system(size: 14, weight: .medium))
@@ -510,6 +613,7 @@ struct ManualInputView: View {
                 points = String(format: "%.0f", record.points)
                 extremeEnergyKwh = String(format: "%.3f", record.extremeEnergyKwh)
                 notes = record.notes
+                selectedRecordType = record.recordType
             } else if let data = extractedData {
                 print("📥 开始加载 extractedData")
                 if !data.electricityAmount.isEmpty {
@@ -736,6 +840,7 @@ struct ManualInputView: View {
             record.points = pointsValue
             record.extremeEnergyKwh = extremeEnergy
             record.notes = notes
+            record.recordType = selectedRecordType
             record.stationType = getStationType(from: location)
         } else {
             let record = ChargingRecord(
@@ -1030,6 +1135,35 @@ struct LocationPickerView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - 记录类型按钮组件
+struct RecordTypeButton: View {
+    let title: String
+    let icon: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    @Environment(\.colorScheme) private var colorScheme
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 12))
+                    .foregroundColor(isSelected ? .white : .secondary)
+                Text(title)
+                    .font(.system(size: 10))
+                    .foregroundColor(isSelected ? .white : .secondary)
+            }
+            .frame(width: 50, height: 44)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? Color.blue : (colorScheme == .dark ? Color.gray.opacity(0.2) : Color.gray.opacity(0.1)))
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

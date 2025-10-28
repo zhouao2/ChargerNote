@@ -235,6 +235,78 @@ class DataManager {
         return trendData
     }
     
+    // 根据时间范围获取充电度数趋势数据
+    func getElectricityTrendData(_ records: [ChargingRecord], timeRange: TimeRange) -> [TrendDataPoint] {
+        let calendar = Calendar.current
+        let now = Date()
+        var trendData: [TrendDataPoint] = []
+        
+        switch timeRange {
+        case .week:
+            // 显示最近7天，每天一个点
+            for i in (0..<7).reversed() {
+                guard let date = calendar.date(byAdding: .day, value: -i, to: now) else { continue }
+                let nextDay = calendar.date(byAdding: .day, value: 1, to: date) ?? date
+                
+                let dayRecords = records.filter { record in
+                    record.chargingTime >= date && record.chargingTime < nextDay
+                }
+                
+                let totalKwh = dayRecords.reduce(0) { $0 + $1.electricityAmount }
+                let label = formatDateLabel(date, format: "E")  // 周几
+                
+                trendData.append(TrendDataPoint(
+                    date: date,
+                    label: label,
+                    amount: totalKwh
+                ))
+            }
+            
+        case .month:
+            // 显示最近4周，每周一个点
+            for i in (0..<4).reversed() {
+                guard let weekStart = calendar.date(byAdding: .weekOfYear, value: -i, to: now) else { continue }
+                let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) ?? weekStart
+                
+                let weekRecords = records.filter { record in
+                    record.chargingTime >= weekStart && record.chargingTime < weekEnd
+                }
+                
+                let totalKwh = weekRecords.reduce(0) { $0 + $1.electricityAmount }
+                let label = "第\(4-i)周"
+                
+                trendData.append(TrendDataPoint(
+                    date: weekStart,
+                    label: label,
+                    amount: totalKwh
+                ))
+            }
+            
+        case .year:
+            // 显示最近12个月，每月一个点
+            for i in (0..<12).reversed() {
+                guard let monthStart = calendar.date(byAdding: .month, value: -i, to: now) else { continue }
+                let monthInterval = calendar.dateInterval(of: .month, for: monthStart)
+                
+                let monthRecords = records.filter { record in
+                    guard let start = monthInterval?.start, let end = monthInterval?.end else { return false }
+                    return record.chargingTime >= start && record.chargingTime < end
+                }
+                
+                let totalKwh = monthRecords.reduce(0) { $0 + $1.electricityAmount }
+                let label = formatDateLabel(monthStart, format: "M月")
+                
+                trendData.append(TrendDataPoint(
+                    date: monthStart,
+                    label: label,
+                    amount: totalKwh
+                ))
+            }
+        }
+        
+        return trendData
+    }
+    
     private func formatDateLabel(_ date: Date, format: String) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = format
