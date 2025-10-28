@@ -1,0 +1,10 @@
+/* 
+  InfoPlist.strings - English
+  ChargerNote
+
+  English localization for app name
+*/
+
+"CFBundleDisplayName" = "ChargerNote";
+"CFBundleName" = "ChargerNote";
+

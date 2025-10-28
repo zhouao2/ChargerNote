@@ -1,0 +1,10 @@
+/* 
+  InfoPlist.strings - Simplified Chinese
+  ChargerNote
+
+  Simplified Chinese localization for app name
+*/
+
+"CFBundleDisplayName" = "充电记账";
+"CFBundleName" = "充电记账";
+
