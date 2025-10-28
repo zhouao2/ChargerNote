@@ -109,7 +109,7 @@ struct AnalyticsView: View {
                             
                             // 白色内容区域
                             VStack(spacing: 24) {
-                                // 第一行统计卡片 - 3个卡片
+                                // 第一行：3个主卡片
                                 HStack(spacing: 8) {
                                     StatisticCard(
                                         title: selectedTimeRange == .week ? "支出" : selectedTimeRange == .month ? "支出" : "支出",
@@ -120,63 +120,11 @@ struct AnalyticsView: View {
                                     )
                                     
                                     StatisticCard(
-                                        title: "积分",
-                                        value: String(format: "%.0f", filteredRecords.reduce(0) { $0 + $1.points }),
-                                        change: "",
-                                        changeColor: .orange,
-                                        icon: "star.fill"
-                                    )
-                                    
-                                    StatisticCard(
-                                        title: "充电次数",
-                                        value: "\(filteredRecords.count)",
-                                        change: "",
-                                        changeColor: .blue,
-                                        icon: "bolt.circle"
-                                    )
-                                }
-                                .padding(.horizontal, 24)
-                                .padding(.top, 24)
-                                
-                                // 第二行统计卡片
-                                HStack(spacing: 16) {
-                                    StatisticCard(
                                         title: "充电度数",
                                         value: String(format: "%.1f", filteredRecords.reduce(0) { $0 + $1.electricityAmount }),
                                         change: "",
                                         changeColor: .orange,
                                         icon: "bolt.fill"
-                                    )
-                                    
-                                    StatisticCard(
-                                        title: "平均电费",
-                                        value: {
-                                            let totalAmount = filteredRecords.reduce(0) { $0 + $1.electricityAmount }
-                                            let totalExpense = filteredRecords.reduce(0) { $0 + $1.totalAmount }
-                                            if totalAmount > 0 {
-                                                return "\(currencySymbol)\(String(format: "%.2f", totalExpense / totalAmount))"
-                                            } else {
-                                                return "\(currencySymbol)0.00"
-                                            }
-                                        }(),
-                                        change: "",
-                                        changeColor: .purple,
-                                        icon: "chart.bar.fill"
-                                    )
-                                }
-                                .padding(.horizontal, 24)
-                                
-                                // 第三行统计卡片 - 电卡使用和余额
-                                HStack(spacing: 16) {
-                                    StatisticCard(
-                                        title: "电卡消耗",
-                                        value: {
-                                            let totalExtremeEnergy = filteredRecords.reduce(0) { $0 + $1.extremeEnergyKwh }
-                                            return String(format: "%.2f kWh", totalExtremeEnergy)
-                                        }(),
-                                        change: "",
-                                        changeColor: .purple,
-                                        icon: "bolt.badge.automatic.fill"
                                     )
                                     
                                     StatisticCard(
@@ -193,13 +141,27 @@ struct AnalyticsView: View {
                                                 .reduce(0) { $0 + $1.extremeEnergyKwh }
                                             
                                             let balance = totalRecharged - totalUsed
-                                            return String(format: "%.2f kWh", balance)
+                                            return String(format: "%.1f", balance)
                                         }(),
                                         change: "",
-                                        changeColor: .green,
+                                        changeColor: .purple,
                                         icon: "creditcard.fill"
                                     )
                                 }
+                                .padding(.horizontal, 24)
+                                .padding(.top, 24)
+                                
+                                // 统计栏：整合次要数据
+                                StatsBar(
+                                    chargingCount: filteredRecords.count,
+                                    points: filteredRecords.reduce(0) { $0 + $1.points },
+                                    averageFee: {
+                                        let totalAmount = filteredRecords.reduce(0) { $0 + $1.electricityAmount }
+                                        let totalExpense = filteredRecords.reduce(0) { $0 + $1.totalAmount }
+                                        return totalAmount > 0 ? totalExpense / totalAmount : 0
+                                    }(),
+                                    currencySymbol: currencySymbol
+                                )
                                 .padding(.horizontal, 24)
                                 
                                 // 支出趋势图
@@ -296,6 +258,81 @@ struct StatisticCard: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color.cardBackground(for: colorScheme))
                 .shadow(color: Color.cardShadow(for: colorScheme), radius: 10, x: 0, y: 4)
+        )
+    }
+}
+
+// MARK: - 统计栏组件
+struct StatsBar: View {
+    let chargingCount: Int
+    let points: Double
+    let averageFee: Double
+    let currencySymbol: String
+    @Environment(\.colorScheme) private var colorScheme
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 4) {
+                Image(systemName: "chart.bar.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+                Text("其他统计")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+            }
+            
+            HStack(spacing: 0) {
+                // 充电次数
+                HStack(spacing: 4) {
+                    Text("充电次数:")
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                    Text("\(chargingCount)")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.primary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                
+                // 分隔线
+                Rectangle()
+                    .fill(Color.secondary.opacity(0.2))
+                    .frame(width: 1, height: 16)
+                    .padding(.horizontal, 8)
+                
+                // 积分
+                HStack(spacing: 4) {
+                    Text("积分消耗:")
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                    Text(String(format: "%.0f", points))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.primary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                
+                // 分隔线
+                Rectangle()
+                    .fill(Color.secondary.opacity(0.2))
+                    .frame(width: 1, height: 16)
+                    .padding(.horizontal, 8)
+                
+                // 平均电费
+                HStack(spacing: 4) {
+                    Text("平均电费:")
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                    Text("\(currencySymbol)\(String(format: "%.2f", averageFee))")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.primary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.cardBackground(for: colorScheme))
+                .shadow(color: Color.cardShadow(for: colorScheme), radius: 8, x: 0, y: 2)
         )
     }
 }

@@ -163,12 +163,6 @@ struct ManualInputView: View {
                                             RecordTypeButton(title: "充电", icon: "bolt.fill", isSelected: selectedRecordType == "充电") {
                                                 selectedRecordType = "充电"
                                             }
-                                            RecordTypeButton(title: "换电", icon: "arrow.triangle.2.circlepath", isSelected: selectedRecordType == "换电") {
-                                                selectedRecordType = "换电"
-                                            }
-                                            RecordTypeButton(title: "维修", icon: "wrench.fill", isSelected: selectedRecordType == "维修") {
-                                                selectedRecordType = "维修"
-                                            }
                                             RecordTypeButton(title: "充值", icon: "creditcard.fill", isSelected: selectedRecordType == "充值") {
                                                 selectedRecordType = "充值"
                                             }

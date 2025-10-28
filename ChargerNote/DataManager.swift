@@ -171,9 +171,15 @@ class DataManager {
         
         switch timeRange {
         case .week:
-            // 显示最近7天，每天一个点
-            for i in (0..<7).reversed() {
-                guard let date = calendar.date(byAdding: .day, value: -i, to: now) else { continue }
+            // 显示本周（周一到周日），每天一个点
+            // 获取本周周一
+            var startOfWeek = calendar.dateComponents([.calendar, .yearForWeekOfYear, .weekOfYear], from: now)
+            startOfWeek.weekday = 2 // 周一
+            guard let mondayDate = calendar.date(from: startOfWeek) else { return [] }
+            
+            // 从周一循环到周日（7天）
+            for i in 0..<7 {
+                guard let date = calendar.date(byAdding: .day, value: i, to: mondayDate) else { continue }
                 let nextDay = calendar.date(byAdding: .day, value: 1, to: date) ?? date
                 
                 let dayRecords = records.filter { record in
@@ -211,9 +217,18 @@ class DataManager {
             }
             
         case .year:
-            // 显示最近12个月，每月一个点
-            for i in (0..<12).reversed() {
-                guard let monthStart = calendar.date(byAdding: .month, value: -i, to: now) else { continue }
+            // 显示本年度（1-12月），每月一个点
+            // 获取本年1月1日
+            let year = calendar.component(.year, from: now)
+            var januaryComponents = DateComponents()
+            januaryComponents.year = year
+            januaryComponents.month = 1
+            januaryComponents.day = 1
+            guard let januaryDate = calendar.date(from: januaryComponents) else { return [] }
+            
+            // 从1月循环到12月
+            for monthOffset in 0..<12 {
+                guard let monthStart = calendar.date(byAdding: .month, value: monthOffset, to: januaryDate) else { continue }
                 let monthInterval = calendar.dateInterval(of: .month, for: monthStart)
                 
                 let monthRecords = records.filter { record in
@@ -243,9 +258,15 @@ class DataManager {
         
         switch timeRange {
         case .week:
-            // 显示最近7天，每天一个点
-            for i in (0..<7).reversed() {
-                guard let date = calendar.date(byAdding: .day, value: -i, to: now) else { continue }
+            // 显示本周（周一到周日），每天一个点
+            // 获取本周周一
+            var startOfWeek = calendar.dateComponents([.calendar, .yearForWeekOfYear, .weekOfYear], from: now)
+            startOfWeek.weekday = 2 // 周一
+            guard let mondayDate = calendar.date(from: startOfWeek) else { return [] }
+            
+            // 从周一循环到周日（7天）
+            for i in 0..<7 {
+                guard let date = calendar.date(byAdding: .day, value: i, to: mondayDate) else { continue }
                 let nextDay = calendar.date(byAdding: .day, value: 1, to: date) ?? date
                 
                 let dayRecords = records.filter { record in
@@ -283,9 +304,18 @@ class DataManager {
             }
             
         case .year:
-            // 显示最近12个月，每月一个点
-            for i in (0..<12).reversed() {
-                guard let monthStart = calendar.date(byAdding: .month, value: -i, to: now) else { continue }
+            // 显示本年度（1-12月），每月一个点
+            // 获取本年1月1日
+            let year = calendar.component(.year, from: now)
+            var januaryComponents = DateComponents()
+            januaryComponents.year = year
+            januaryComponents.month = 1
+            januaryComponents.day = 1
+            guard let januaryDate = calendar.date(from: januaryComponents) else { return [] }
+            
+            // 从1月循环到12月
+            for monthOffset in 0..<12 {
+                guard let monthStart = calendar.date(byAdding: .month, value: monthOffset, to: januaryDate) else { continue }
                 let monthInterval = calendar.dateInterval(of: .month, for: monthStart)
                 
                 let monthRecords = records.filter { record in

@@ -415,11 +415,12 @@ struct SettingsView: View {
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         
         // 构建 CSV 内容
-        var csvContent = "日期,充电地点,充电度数(kWh),电费金额,服务费,总金额,停车费,优惠金额,积分,极能度数(kWh),备注\n"
+        var csvContent = "日期,充电地点,记录类型,充电度数(kWh),电费金额,服务费,总金额,停车费,优惠金额,积分,极能度数(kWh),备注\n"
         
         for record in chargingRecords.sorted(by: { $0.chargingTime > $1.chargingTime }) {
             let date = dateFormatter.string(from: record.chargingTime)
             let location = record.location
+            let recordType = record.recordType
             let electricityAmount = String(format: "%.1f", record.electricityAmount)
             let amount = String(format: "%.2f", record.amount)
             let serviceFee = String(format: "%.2f", record.serviceFee)
@@ -430,7 +431,7 @@ struct SettingsView: View {
             let extremeEnergyKwh = String(format: "%.3f", record.extremeEnergyKwh)
             let notes = record.notes.isEmpty ? "无" : record.notes
             
-            csvContent += "\(date),\(location),\(electricityAmount),\(amount),\(serviceFee),\(totalAmount),\(parkingFee),\(discountAmount),\(points),\(extremeEnergyKwh),\(notes)\n"
+            csvContent += "\(date),\(location),\(recordType),\(electricityAmount),\(amount),\(serviceFee),\(totalAmount),\(parkingFee),\(discountAmount),\(points),\(extremeEnergyKwh),\(notes)\n"
         }
         
         // 保存到临时文件并打开分享
