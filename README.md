@@ -291,8 +291,8 @@ Zhou Ao
 ## 📮 联系方式
 
 如有问题或建议，欢迎联系：
-- Email: [您的邮箱]
-- GitHub: [您的GitHub]
+- Email: jimmy.zhou@outlook.com
+- GitHub: https://github.com/zhouao2/ChargerNote
 
 ---
 

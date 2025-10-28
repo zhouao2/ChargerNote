@@ -243,7 +243,18 @@ struct SettingsView: View {
                                 SettingsSection(title: "应用信息") {
                                     SettingsRow(title: "版本号", value: "1.0.0")
                                     SettingsRow(title: "构建版本", value: "2025.10.25")
-                                    SettingsRow(title: "开发者", value: "Zhou Ao", showSeparator: false)
+                                    SettingsRow(title: "开发者", value: "Zhou Ao")
+                                    SettingsRow(
+                                        icon: "link",
+                                        title: "GitHub",
+                                        hasArrow: true,
+                                        showSeparator: false,
+                                        action: {
+                                            if let url = URL(string: "https://github.com/zhouao2/ChargerNote") {
+                                                UIApplication.shared.open(url)
+                                            }
+                                        }
+                                    )
                                 }
                                 
                                 // 危险操作

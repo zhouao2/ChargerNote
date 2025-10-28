@@ -153,9 +153,9 @@
 ## 反馈与建议
 
 如果您有任何建议或发现问题，欢迎：
-- 📧 发送邮件至：support@chargernote.com
-- 🐛 提交Issue：[GitHub Issues]
-- 💬 加入讨论：[用户社群]
+- 📧 发送邮件至：jimmy.zhou@outlook.com
+- 🐛 提交Issue：https://github.com/zhouao2/ChargerNote/issues
+- 💬 GitHub仓库：https://github.com/zhouao2/ChargerNote
 
 感谢您的支持！⚡
 
