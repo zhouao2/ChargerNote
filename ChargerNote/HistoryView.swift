@@ -43,7 +43,7 @@ struct HistoryView: View {
                                 VStack(spacing: 16) {
                                     // 标题和搜索
                                     HStack {
-                                        Text("历史记录")
+                                        Text(L("history.title"))
                                             .font(.system(size: 24, weight: .bold))
                                             .foregroundColor(.white)
                                         Spacer()
@@ -271,7 +271,7 @@ struct SwipeableRecordRow: View {
                     VStack(spacing: 4) {
                         Image(systemName: "pencil")
                             .font(.system(size: 20))
-                        Text("编辑")
+                        Text(L("common.edit"))
                             .font(.system(size: 12))
                     }
                     .foregroundColor(.white)
@@ -289,7 +289,7 @@ struct SwipeableRecordRow: View {
                     VStack(spacing: 4) {
                         Image(systemName: "trash")
                             .font(.system(size: 20))
-                        Text("删除")
+                        Text(L("common.delete"))
                             .font(.system(size: 12))
                     }
                     .foregroundColor(.white)

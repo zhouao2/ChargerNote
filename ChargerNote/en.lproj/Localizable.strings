@@ -1,0 +1,170 @@
+/* 
+  Localizable.strings - English
+  ChargerNote
+  
+  English localization strings
+*/
+
+// MARK: - TabBar
+"tab.home" = "Home";
+"tab.analytics" = "Analytics";
+"tab.history" = "History";
+"tab.settings" = "Settings";
+
+// MARK: - Home View
+"home.title" = "ChargerNote";
+"home.monthly_expense" = "This Month";
+"home.monthly_kwh" = "Energy Used";
+"home.quick_actions" = "Quick Actions";
+"home.quick_charge" = "Fast Charge";
+"home.charge" = "Charge";
+"home.recharge" = "Recharge";
+"home.recent_records" = "Recent Records";
+"home.view_all" = "View All";
+"home.no_records" = "No charging records";
+"home.no_records_desc" = "Tap to add your first record";
+"home.processing" = "Recognizing charging info";
+"home.ocr.title" = "Upload Charging Screenshot";
+"home.ocr.message" = "Please upload a screenshot of your charging order. We'll automatically extract the information.";
+"home.ocr.confirm" = "Got it";
+"home.station_not_exist" = "Station '%@' doesn't exist. Create it?";
+"home.create" = "Create";
+"home.cancel" = "Cancel";
+"home.extracting_info" = "Extracting charging info...";
+"home.extract_success" = "Recognition successful";
+"home.extract_failed" = "Recognition failed, please enter manually";
+
+// MARK: - Manual Input View
+"manual.title" = "Add Record";
+"manual.done" = "Done";
+"manual.total_amount" = "Total Paid";
+"manual.recharge_amount" = "Recharge Amount";
+"manual.formula" = "Electricity + Service - Discount = Total";
+"manual.basic_info" = "Basic Information";
+"manual.cost_details" = "Cost Details";
+"manual.recharge_details" = "Recharge Amount";
+"manual.other_info" = "Other Information";
+"manual.charging_station" = "Charging Station";
+"manual.recharge_platform" = "Recharge Platform";
+"manual.charging_time" = "Charging Time";
+"manual.purchase_time" = "Purchase Time";
+"manual.electricity_kwh" = "Energy (kWh)";
+"manual.acquired_kwh" = "Energy Acquired";
+"manual.electricity_fee" = "Electricity";
+"manual.service_fee" = "Service";
+"manual.discount" = "Discount";
+"manual.parking_fee" = "Parking";
+"manual.points" = "Points";
+"manual.extreme_energy" = "Extreme Energy";
+"manual.notes" = "Notes";
+"manual.not_entered" = "Not entered";
+"manual.not_recognized" = "Not recognized";
+"manual.editing" = "Editing";
+"manual.select_station" = "Select Station";
+"manual.recharge_equivalence" = "≈$%.2f/kWh";
+"manual.record_type.charge" = "Charge";
+"manual.record_type.recharge" = "Recharge";
+
+// MARK: - History View
+"history.title" = "History";
+"history.no_records" = "No records this month";
+"history.delete_confirm" = "Are you sure you want to delete this record?";
+"history.delete" = "Delete";
+"history.edit" = "Edit";
+"history.acquired_kwh" = "+%.0f kWh";
+"history.unit_price" = "≈$%.2f/kWh";
+
+// MARK: - Analytics View
+"analytics.title" = "Analytics";
+"analytics.week" = "Week";
+"analytics.month" = "Month";
+"analytics.year" = "Year";
+"analytics.expense" = "Expense";
+"analytics.electricity_kwh" = "Energy (kWh)";
+"analytics.card_balance" = "Card Balance";
+"analytics.other_stats" = "Other Stats";
+"analytics.times" = "Times";
+"analytics.points" = "Points";
+"analytics.average" = "Avg";
+"analytics.avg_cost" = "Avg Cost";
+"analytics.card_usage" = "Card Usage";
+"analytics.expense_trend" = "Expense Trend";
+"analytics.electricity_trend" = "Energy Trend";
+"analytics.this_week" = "This Week";
+"analytics.this_month" = "This Month";
+"analytics.this_year" = "This Year";
+"analytics.station_distribution" = "Station Distribution";
+"analytics.no_data" = "No Data";
+
+// MARK: - Settings View
+"settings.title" = "Settings";
+"settings.user" = "ChargerNote User";
+"settings.records_count" = "%d charging records";
+"settings.appearance" = "Appearance";
+"settings.theme" = "Theme";
+"settings.theme.light" = "Light";
+"settings.theme.dark" = "Dark";
+"settings.theme.auto" = "Auto";
+"settings.language" = "Language & Region";
+"settings.language.title" = "Language";
+"settings.language.chinese" = "中文";
+"settings.language.english" = "English";
+"settings.currency" = "Currency";
+"settings.currency.cny" = "Chinese Yuan (¥)";
+"settings.currency.usd" = "US Dollar ($)";
+"settings.currency.eur" = "Euro (€)";
+"settings.station_management" = "Station Management";
+"settings.manage_stations" = "Manage Stations";
+"settings.add_station" = "Add Station";
+"settings.station_name" = "Station Name";
+"settings.enter_station_name" = "Enter station name";
+"settings.save" = "Save";
+"settings.data_management" = "Data Management";
+"settings.export_csv" = "Export CSV Data";
+"settings.export_csv.desc" = "Export all records as CSV";
+"settings.export_success" = "Export successful";
+"settings.export_failed" = "Export failed";
+"settings.backup_icloud" = "Backup to iCloud";
+"settings.backup_icloud.desc" = "Backup data to iCloud Drive";
+"settings.backup_success" = "Backup successful";
+"settings.backup_failed" = "Backup failed: %@";
+"settings.restore_icloud" = "Restore from iCloud";
+"settings.restore_icloud.desc" = "Restore backup from iCloud Drive";
+"settings.restore_success" = "Restore successful";
+"settings.restore_failed" = "Restore failed: %@";
+"settings.dangerous_operations" = "Dangerous Operations";
+"settings.delete_all" = "Delete All Data";
+"settings.delete_all.desc" = "Permanently delete all records and settings";
+"settings.delete_confirm.title" = "Confirm Delete";
+"settings.delete_confirm.message" = "This will permanently delete all data and cannot be undone. Continue?";
+"settings.delete_confirm.confirm" = "Confirm Delete";
+"settings.about" = "About";
+"settings.version" = "Version";
+"settings.github" = "GitHub";
+"settings.language_switch.title" = "Language Switch";
+"settings.language_switch.message" = "The language will take effect after restarting the app";
+"settings.ok" = "OK";
+
+// MARK: - Common
+"common.save" = "Save";
+"common.cancel" = "Cancel";
+"common.confirm" = "Confirm";
+"common.delete" = "Delete";
+"common.edit" = "Edit";
+"common.done" = "Done";
+"common.close" = "Close";
+"common.ok" = "OK";
+"common.kwh" = "kWh";
+"common.times" = "times";
+
+// MARK: - Date/Time
+"date.today" = "Today";
+"date.yesterday" = "Yesterday";
+"date.monday" = "Mon";
+"date.tuesday" = "Tue";
+"date.wednesday" = "Wed";
+"date.thursday" = "Thu";
+"date.friday" = "Fri";
+"date.saturday" = "Sat";
+"date.sunday" = "Sun";
+

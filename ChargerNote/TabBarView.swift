@@ -21,10 +21,10 @@ struct TabBarView: View {
         
         var title: String {
             switch self {
-            case .home: return "记账"
-            case .analytics: return "统计"
-            case .history: return "历史"
-            case .settings: return "设置"
+            case .home: return L("tab.home")
+            case .analytics: return L("tab.analytics")
+            case .history: return L("tab.history")
+            case .settings: return L("tab.settings")
             }
         }
         

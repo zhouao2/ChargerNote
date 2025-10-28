@@ -72,7 +72,7 @@ struct ManualInputView: View {
                         
                         Spacer()
                         
-                        Text("记一笔")
+                        Text(L("manual.title"))
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(.primary)
                         
@@ -80,7 +80,7 @@ struct ManualInputView: View {
                         
                         // 完成按钮
                         Button(action: saveRecord) {
-                            Text("完成")
+                            Text(L("manual.done"))
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.blue)
                         }
@@ -94,7 +94,7 @@ struct ManualInputView: View {
                             // 💰 顶部金额区域 - Phase 1 优化
                             VStack(spacing: 12) {
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(selectedRecordType == "充值" ? "充值金额" : "实付金额")
+                                    Text(selectedRecordType == "充值" ? L("manual.recharge_amount") : L("manual.total_amount"))
                                         .font(.system(size: 14))
                                         .foregroundColor(.secondary)
                                     
@@ -115,15 +115,15 @@ struct ManualInputView: View {
                                 // Phase 1: 计算公式显示（充值模式不显示）
                                 if selectedRecordType != "充值" && hasInputValue {
                                     HStack(spacing: 4) {
-                                        FormulaItem(label: "电费", value: electricityAmount, symbol: currencySymbol, color: .primary)
+                                        FormulaItem(label: L("manual.electricity_fee"), value: electricityAmount, symbol: currencySymbol, color: .primary)
                                         Text("+")
                                             .font(.system(size: 12))
                                             .foregroundColor(.secondary)
-                                        FormulaItem(label: "服务费", value: serviceFee, symbol: currencySymbol, color: .primary)
+                                        FormulaItem(label: L("manual.service_fee"), value: serviceFee, symbol: currencySymbol, color: .primary)
                                         Text("-")
                                             .font(.system(size: 12))
                                             .foregroundColor(.secondary)
-                                        FormulaItem(label: "优惠", value: discountAmount, symbol: currencySymbol, color: .green)
+                                        FormulaItem(label: L("manual.discount"), value: discountAmount, symbol: currencySymbol, color: .green)
                                     }
                                     .font(.system(size: 12))
                                     .transition(.opacity.combined(with: .scale))
@@ -138,7 +138,7 @@ struct ManualInputView: View {
                             
                             // 📍 Phase 1: 基本信息分组
                             VStack(spacing: 0) {
-                                SectionHeader(title: "基本信息", icon: "doc.text.fill")
+                                SectionHeader(title: L("manual.basic_info"), icon: "doc.text.fill")
                                 
                                 // 记录类型选择
                                 VStack(spacing: 0) {
@@ -152,7 +152,7 @@ struct ManualInputView: View {
                                                 .foregroundColor(.gray)
                                         }
                                         
-                                        Text("记录类型")
+                                        Text(L("manual.record_type.charge"))
                                             .font(.system(size: 16))
                                             .foregroundColor(.primary)
                                         
@@ -160,10 +160,10 @@ struct ManualInputView: View {
                                         
                                         // 类型选择按钮
                                         HStack(spacing: 8) {
-                                            RecordTypeButton(title: "充电", icon: "bolt.fill", isSelected: selectedRecordType == "充电") {
+                                            RecordTypeButton(title: L("manual.record_type.charge"), icon: "bolt.fill", isSelected: selectedRecordType == "充电") {
                                                 selectedRecordType = "充电"
                                             }
-                                            RecordTypeButton(title: "充值", icon: "creditcard.fill", isSelected: selectedRecordType == "充值") {
+                                            RecordTypeButton(title: L("manual.record_type.recharge"), icon: "creditcard.fill", isSelected: selectedRecordType == "充值") {
                                                 selectedRecordType = "充值"
                                             }
                                         }
@@ -180,8 +180,8 @@ struct ManualInputView: View {
                                 }) {
                                     DetailInputRow(
                                         icon: "location",
-                                        title: selectedRecordType == "充值" ? "充值平台" : "充电站",
-                                        value: location.isEmpty ? "请选择" : location,
+                                        title: selectedRecordType == "充值" ? L("manual.recharge_platform") : L("manual.charging_station"),
+                                        value: location.isEmpty ? L("manual.select_station") : location,
                                         hasArrow: true,
                                         isEmpty: location.isEmpty
                                     )
@@ -194,7 +194,7 @@ struct ManualInputView: View {
                                 }) {
                                     DetailInputRow(
                                         icon: "clock",
-                                        title: selectedRecordType == "充值" ? "购买时间" : "充电时间",
+                                        title: selectedRecordType == "充值" ? L("manual.purchase_time") : L("manual.charging_time"),
                                         value: formatDate(chargingTime),
                                         hasArrow: true
                                     )
@@ -209,8 +209,8 @@ struct ManualInputView: View {
                                     }) {
                                         DetailInputRow(
                                             icon: "bolt.badge.automatic",
-                                            title: "获得度数",
-                                            value: formatValue(electricityKwh, suffix: " kWh", defaultText: "未输入"),
+                                            title: L("manual.acquired_kwh"),
+                                            value: formatValue(electricityKwh, suffix: " kWh", defaultText: L("manual.not_entered")),
                                             hasArrow: false,
                                             isSelected: currentEditingField == .electricityKwh,
                                             valueColor: .purple,
@@ -225,8 +225,8 @@ struct ManualInputView: View {
                                     }) {
                                         DetailInputRow(
                                             icon: "bolt",
-                                            title: "充电电量",
-                                            value: formatValue(electricityKwh, suffix: " kWh", defaultText: "未输入"),
+                                            title: L("manual.electricity_kwh"),
+                                            value: formatValue(electricityKwh, suffix: " kWh", defaultText: L("manual.not_entered")),
                                             hasArrow: false,
                                             isSelected: currentEditingField == .electricityKwh,
                                             isEmpty: electricityKwh.isEmpty
@@ -243,7 +243,7 @@ struct ManualInputView: View {
                             
                             // 💰 Phase 1: 费用明细分组
                             VStack(spacing: 0) {
-                                SectionHeader(title: selectedRecordType == "充值" ? "充值金额" : "费用明细", icon: "dollarsign.circle.fill")
+                                SectionHeader(title: selectedRecordType == "充值" ? L("manual.recharge_details") : L("manual.cost_details"), icon: "dollarsign.circle.fill")
                                 
                                 // 充值模式：只显示充值金额输入
                                 if selectedRecordType == "充值" {
@@ -254,7 +254,7 @@ struct ManualInputView: View {
                                     }) {
                                         DetailInputRow(
                                             icon: "creditcard",
-                                            title: "充值金额",
+                                            title: L("manual.recharge_amount"),
                                             value: formatValue(electricityAmount, prefix: currencySymbol),
                                             hasArrow: false,
                                             isSelected: currentEditingField == .electricityAmount,
@@ -296,7 +296,7 @@ struct ManualInputView: View {
                                     }) {
                                         DetailInputRow(
                                             icon: "yensign",
-                                            title: "电费",
+                                            title: L("manual.electricity_fee"),
                                             value: formatValue(electricityAmount, prefix: currencySymbol),
                                             hasArrow: false,
                                             isSelected: currentEditingField == .electricityAmount,
@@ -311,7 +311,7 @@ struct ManualInputView: View {
                                     }) {
                                         DetailInputRow(
                                             icon: "hand.raised",
-                                            title: "服务费",
+                                            title: L("manual.service_fee"),
                                             value: formatValue(serviceFee, prefix: currencySymbol),
                                             hasArrow: false,
                                             isSelected: currentEditingField == .serviceFee,
@@ -326,7 +326,7 @@ struct ManualInputView: View {
                                     }) {
                                         DetailInputRow(
                                             icon: "tag.fill",
-                                            title: "优惠金额",
+                                            title: L("manual.discount"),
                                             value: formatValue(discountAmount, prefix: currencySymbol),
                                             hasArrow: false,
                                             isSelected: currentEditingField == .discountAmount,
@@ -349,7 +349,7 @@ struct ManualInputView: View {
                                                 .foregroundColor(.blue)
                                         }
                                         
-                                        Text("实付")
+                                        Text(L("manual.total_amount"))
                                             .font(.system(size: 16, weight: .semibold))
                                             .foregroundColor(.primary)
                                         
@@ -374,7 +374,7 @@ struct ManualInputView: View {
                             
                             // 🔖 Phase 1: 其他信息分组
                             VStack(spacing: 0) {
-                                SectionHeader(title: "其他信息", icon: "ellipsis.circle.fill")
+                                SectionHeader(title: L("manual.other_info"), icon: "ellipsis.circle.fill")
                                 
                                 Button(action: {
                                     notesFieldFocused = false
@@ -383,7 +383,7 @@ struct ManualInputView: View {
                                 }) {
                                     DetailInputRow(
                                         icon: "parkingsign",
-                                        title: "停车费",
+                                        title: L("manual.parking_fee"),
                                         value: formatValue(parkingFee, prefix: currencySymbol),
                                         hasArrow: false,
                                         isSelected: currentEditingField == .parkingFee,
@@ -398,8 +398,8 @@ struct ManualInputView: View {
                                 }) {
                                     DetailInputRow(
                                         icon: "star.fill",
-                                        title: "积分",
-                                        value: points.isEmpty || points == "0" ? "未输入" : points,
+                                        title: L("manual.points"),
+                                        value: points.isEmpty || points == "0" ? L("manual.not_entered") : points,
                                         hasArrow: false,
                                         isSelected: currentEditingField == .points,
                                         valueColor: .orange,
@@ -419,7 +419,7 @@ struct ManualInputView: View {
                                             .foregroundColor(.purple)
                                     }
                                     
-                                    Text("极能抵扣")
+                                    Text(L("manual.extreme_energy"))
                                         .font(.system(size: 16))
                                         .foregroundColor(.primary)
                                     
@@ -447,7 +447,7 @@ struct ManualInputView: View {
                                             .foregroundColor(.gray)
                                     }
                                     
-                                    Text("备注")
+                                    Text(L("manual.notes"))
                                         .font(.system(size: 16))
                                         .foregroundColor(.primary)
                                     
@@ -485,7 +485,7 @@ struct ManualInputView: View {
                             // 当前编辑字段提示
                             if currentEditingField != nil {
                                 HStack {
-                                    Text("正在编辑：\(displayDescription)")
+                                    Text(L("manual.editing") + ": \(displayDescription)")
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.secondary)
                                     Spacer()
@@ -551,7 +551,7 @@ struct ManualInputView: View {
                                     }
                                     
                                     Button(action: saveRecord) {
-                                        Text("保存")
+                                        Text(L("common.save"))
                                             .font(.system(size: 16, weight: .semibold))
                                             .foregroundColor(.white)
                                             .frame(maxWidth: .infinity)
@@ -684,7 +684,7 @@ struct ManualInputView: View {
     // 格式化极能抵扣显示
     private func formatExtremeEnergy(_ value: String) -> String {
         if value.isEmpty || value == "0" || value == "0.0" || value == "0.00" || value == "0.000" {
-            return "未识别"
+            return L("manual.not_recognized")
         }
         // 格式化为3位小数并添加单位
         if let kwh = Double(value) {
@@ -717,17 +717,17 @@ struct ManualInputView: View {
     private var displayDescription: String {
         switch currentEditingField {
         case .electricityAmount:
-            return "电费"
+            return L("manual.electricity_fee")
         case .serviceFee:
-            return "服务费"
+            return L("manual.service_fee")
         case .electricityKwh:
-            return "充电电量"
+            return L("manual.electricity_kwh")
         case .parkingFee:
-            return "停车费"
+            return L("manual.parking_fee")
         case .discountAmount:
-            return "优惠金额"
+            return L("manual.discount")
         case .points:
-            return "积分"
+            return L("manual.points")
         case .none:
             return ""
         }
@@ -1056,7 +1056,7 @@ struct DatePickerView: View {
                 
                 Spacer()
             }
-            .navigationTitle("选择充电时间")
+            .navigationTitle(L("manual.charging_time"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -1066,7 +1066,7 @@ struct DatePickerView: View {
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完成") {
+                    Button(L("manual.done")) {
                         selectedDate = tempDate
                         dismiss()
                     }
@@ -1119,11 +1119,11 @@ struct LocationPickerView: View {
                     }
                 }
             }
-            .navigationTitle("选择充电地点")
+            .navigationTitle(L("manual.charging_station"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完成") {
+                    Button(L("manual.done")) {
                         dismiss()
                     }
                 }

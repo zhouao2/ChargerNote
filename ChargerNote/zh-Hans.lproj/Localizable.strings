@@ -1,0 +1,170 @@
+/* 
+  Localizable.strings - Simplified Chinese
+  ChargerNote
+  
+  中文本地化字符串
+*/
+
+// MARK: - TabBar
+"tab.home" = "记账";
+"tab.analytics" = "统计";
+"tab.history" = "历史";
+"tab.settings" = "设置";
+
+// MARK: - Home View
+"home.title" = "充电记账";
+"home.monthly_expense" = "本月支出";
+"home.monthly_kwh" = "本月度数";
+"home.quick_actions" = "快捷操作";
+"home.quick_charge" = "快充";
+"home.charge" = "充电";
+"home.recharge" = "充值";
+"home.recent_records" = "最近记录";
+"home.view_all" = "查看全部";
+"home.no_records" = "暂无充电记录";
+"home.no_records_desc" = "点击添加第一条记录";
+"home.processing" = "正在识别充电信息";
+"home.ocr.title" = "上传充电截图";
+"home.ocr.message" = "请上传充电结束后的订单截图，我们将自动识别充电信息";
+"home.ocr.confirm" = "我知道了";
+"home.station_not_exist" = "站点 '%@' 不存在，是否创建？";
+"home.create" = "创建";
+"home.cancel" = "取消";
+"home.extracting_info" = "正在提取充电信息...";
+"home.extract_success" = "识别成功";
+"home.extract_failed" = "识别失败，请手动输入";
+
+// MARK: - Manual Input View
+"manual.title" = "记一笔";
+"manual.done" = "完成";
+"manual.total_amount" = "实付金额";
+"manual.recharge_amount" = "充值金额";
+"manual.formula" = "电费 + 服务费 - 优惠 = 实付";
+"manual.basic_info" = "基本信息";
+"manual.cost_details" = "费用明细";
+"manual.recharge_details" = "充值金额";
+"manual.other_info" = "其他信息";
+"manual.charging_station" = "充电站";
+"manual.recharge_platform" = "充值平台";
+"manual.charging_time" = "充电时间";
+"manual.purchase_time" = "购买时间";
+"manual.electricity_kwh" = "充电电量";
+"manual.acquired_kwh" = "获得度数";
+"manual.electricity_fee" = "电费";
+"manual.service_fee" = "服务费";
+"manual.discount" = "优惠金额";
+"manual.parking_fee" = "停车费";
+"manual.points" = "积分";
+"manual.extreme_energy" = "极能抵扣";
+"manual.notes" = "备注";
+"manual.not_entered" = "未输入";
+"manual.not_recognized" = "未识别";
+"manual.editing" = "正在编辑";
+"manual.select_station" = "请选择充电站";
+"manual.recharge_equivalence" = "约¥%.2f/度";
+"manual.record_type.charge" = "充电";
+"manual.record_type.recharge" = "充值";
+
+// MARK: - History View
+"history.title" = "历史记录";
+"history.no_records" = "本月暂无记录";
+"history.delete_confirm" = "确定要删除这条记录吗？";
+"history.delete" = "删除";
+"history.edit" = "编辑";
+"history.acquired_kwh" = "获得%.0f度";
+"history.unit_price" = "约¥%.2f/度";
+
+// MARK: - Analytics View
+"analytics.title" = "统计分析";
+"analytics.week" = "周";
+"analytics.month" = "月";
+"analytics.year" = "年";
+"analytics.expense" = "支出";
+"analytics.electricity_kwh" = "充电度数";
+"analytics.card_balance" = "电卡余额";
+"analytics.other_stats" = "其他统计";
+"analytics.times" = "次数";
+"analytics.points" = "积分";
+"analytics.average" = "平均";
+"analytics.avg_cost" = "平均电费";
+"analytics.card_usage" = "电卡使用";
+"analytics.expense_trend" = "支出趋势";
+"analytics.electricity_trend" = "充电度数趋势";
+"analytics.this_week" = "本周";
+"analytics.this_month" = "本月";
+"analytics.this_year" = "本年";
+"analytics.station_distribution" = "充电站分布";
+"analytics.no_data" = "暂无数据";
+
+// MARK: - Settings View
+"settings.title" = "设置";
+"settings.user" = "充电记账用户";
+"settings.records_count" = "已记录 %d 条充电记录";
+"settings.appearance" = "外观设置";
+"settings.theme" = "主题模式";
+"settings.theme.light" = "浅色";
+"settings.theme.dark" = "深色";
+"settings.theme.auto" = "跟随系统";
+"settings.language" = "语言与地区";
+"settings.language.title" = "语言";
+"settings.language.chinese" = "中文";
+"settings.language.english" = "English";
+"settings.currency" = "货币";
+"settings.currency.cny" = "人民币 (¥)";
+"settings.currency.usd" = "美元 ($)";
+"settings.currency.eur" = "欧元 (€)";
+"settings.station_management" = "充电站管理";
+"settings.manage_stations" = "管理充电站";
+"settings.add_station" = "添加充电站";
+"settings.station_name" = "充电站名称";
+"settings.enter_station_name" = "请输入充电站名称";
+"settings.save" = "保存";
+"settings.data_management" = "数据管理";
+"settings.export_csv" = "导出 CSV 数据";
+"settings.export_csv.desc" = "将所有充电记录导出为 CSV 格式";
+"settings.export_success" = "导出成功";
+"settings.export_failed" = "导出失败";
+"settings.backup_icloud" = "备份到 iCloud";
+"settings.backup_icloud.desc" = "将数据备份到 iCloud Drive";
+"settings.backup_success" = "备份成功";
+"settings.backup_failed" = "备份失败: %@";
+"settings.restore_icloud" = "从 iCloud 恢复";
+"settings.restore_icloud.desc" = "从 iCloud Drive 恢复备份";
+"settings.restore_success" = "恢复成功";
+"settings.restore_failed" = "恢复失败: %@";
+"settings.dangerous_operations" = "危险操作";
+"settings.delete_all" = "删除所有数据";
+"settings.delete_all.desc" = "永久删除所有充电记录和设置";
+"settings.delete_confirm.title" = "确认删除";
+"settings.delete_confirm.message" = "此操作将永久删除所有数据，无法恢复。确定要继续吗？";
+"settings.delete_confirm.confirm" = "确认删除";
+"settings.about" = "关于应用";
+"settings.version" = "版本";
+"settings.github" = "GitHub";
+"settings.language_switch.title" = "语言切换";
+"settings.language_switch.message" = "语言将在重启应用后生效";
+"settings.ok" = "好的";
+
+// MARK: - Common
+"common.save" = "保存";
+"common.cancel" = "取消";
+"common.confirm" = "确认";
+"common.delete" = "删除";
+"common.edit" = "编辑";
+"common.done" = "完成";
+"common.close" = "关闭";
+"common.ok" = "好的";
+"common.kwh" = "kWh";
+"common.times" = "次";
+
+// MARK: - Date/Time
+"date.today" = "今天";
+"date.yesterday" = "昨天";
+"date.monday" = "周一";
+"date.tuesday" = "周二";
+"date.wednesday" = "周三";
+"date.thursday" = "周四";
+"date.friday" = "周五";
+"date.saturday" = "周六";
+"date.sunday" = "周日";
+

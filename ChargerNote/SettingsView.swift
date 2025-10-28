@@ -120,7 +120,7 @@ struct SettingsView: View {
                                 VStack(spacing: 16) {
                                     // 标题和用户
                                     HStack {
-                                        Text("设置")
+                                        Text(L("settings.title"))
                                             .font(.system(size: 24, weight: .bold))
                                             .foregroundColor(colorScheme == .dark ? .white.opacity(0.95) : .white)
                                         Spacer()
@@ -143,11 +143,11 @@ struct SettingsView: View {
                                         }
                                         
                                         VStack(alignment: .leading, spacing: 4) {
-                                            Text("充电记账用户")
+                                            Text(L("settings.user"))
                                                 .font(.system(size: 16, weight: .medium))
                                                 .foregroundColor(colorScheme == .dark ? .white.opacity(0.95) : .white)
                                             
-                                            Text("已记录 \(chargingRecords.count) 条充电记录")
+                                            Text(L("settings.records_count", chargingRecords.count))
                                                 .font(.system(size: 14))
                                                 .foregroundColor(colorScheme == .dark ? .white.opacity(0.75) : .white.opacity(0.95))
                                         }

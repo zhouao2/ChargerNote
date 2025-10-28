@@ -69,7 +69,7 @@ struct AnalyticsView: View {
                                 VStack(spacing: 16) {
                                     // 标题和下载
                                     HStack {
-                                        Text("统计分析")
+                                        Text(L("analytics.title"))
                                             .font(.system(size: 24, weight: .bold))
                                             .foregroundColor(.white)
                                         Spacer()
@@ -276,7 +276,7 @@ struct StatsBar: View {
                 Image(systemName: "chart.bar.fill")
                     .font(.system(size: 14))
                     .foregroundColor(.secondary)
-                Text("其他统计")
+                Text(L("analytics.other_stats"))
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.primary)
             }
@@ -409,7 +409,7 @@ struct TrendChartView: View {
         VStack(spacing: 16) {
             // 标题
             HStack {
-                Text("支出趋势")
+                Text(L("analytics.expense_trend"))
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.primary)
                 Spacer()
@@ -424,7 +424,7 @@ struct TrendChartView: View {
                     Image(systemName: "chart.line.uptrend.xyaxis")
                         .font(.system(size: 40))
                         .foregroundColor(.gray.opacity(0.5))
-                    Text("暂无数据")
+                    Text(L("analytics.no_data"))
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
                 }
@@ -630,7 +630,7 @@ struct ElectricityTrendChartView: View {
         VStack(spacing: 16) {
             // 标题
             HStack {
-                Text("充电度数趋势")
+                Text(L("analytics.electricity_trend"))
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.primary)
                 Spacer()
@@ -645,7 +645,7 @@ struct ElectricityTrendChartView: View {
                     Image(systemName: "chart.line.uptrend.xyaxis")
                         .font(.system(size: 40))
                         .foregroundColor(.gray.opacity(0.5))
-                    Text("暂无数据")
+                    Text(L("analytics.no_data"))
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
                 }

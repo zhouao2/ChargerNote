@@ -22,7 +22,7 @@ struct HomeView: View {
     @State private var showingImagePicker = false
     @State private var extractedData: ExtractedChargingData?
     @State private var isProcessingImage = false
-    @State private var processingStatus: String = "正在识别充电信息"
+    @State private var processingStatus: String = L("home.processing")
     @State private var showingNewStationAlert = false
     @State private var recognizedStationName: String = ""
     private let dataManager = DataManager.shared
@@ -55,7 +55,7 @@ struct HomeView: View {
                                     VStack(spacing: 16) {
                                         // 标题和通知
                                         HStack {
-                                            Text("充电记账")
+                                            Text(L("home.title"))
                                                 .font(.system(size: 24, weight: .bold))
                                                 .foregroundColor(.white)
                                             Spacer()
@@ -70,7 +70,7 @@ struct HomeView: View {
                                         HStack(spacing: 0) {
                                             // 左侧：本月支出
                                             VStack(alignment: .leading, spacing: 8) {
-                                                Text("本月支出")
+                                                Text(L("home.monthly_expense"))
                                                     .font(.system(size: 14))
                                                     .foregroundColor(.white.opacity(0.8))
                                                 
@@ -89,7 +89,7 @@ struct HomeView: View {
                                             
                                             // 右侧：本月充电度数
                                             VStack(alignment: .leading, spacing: 8) {
-                                                Text("本月度数")
+                                                Text(L("home.monthly_kwh"))
                                                     .font(.system(size: 14))
                                                     .foregroundColor(.white.opacity(0.8))
                                                 
@@ -128,10 +128,10 @@ struct HomeView: View {
                                                 }
                                                 
                                                 VStack(spacing: 4) {
-                                                    Text("上传截图")
+                                                    Text(L("home.ocr.title"))
                                                         .font(.system(size: 16, weight: .semibold))
                                                         .foregroundColor(.primary)
-                                                    Text("自动识别费用")
+                                                    Text(L("home.extract_success"))
                                                         .font(.system(size: 12))
                                                         .foregroundColor(.secondary)
                                                 }
@@ -161,10 +161,10 @@ struct HomeView: View {
                                                 }
                                                 
                                                 VStack(spacing: 4) {
-                                                    Text("手动输入")
+                                                    Text(L("manual.title"))
                                                         .font(.system(size: 16, weight: .semibold))
                                                         .foregroundColor(.primary)
-                                                    Text("快速记录费用")
+                                                    Text(L("home.extracting_info"))
                                                         .font(.system(size: 12))
                                                         .foregroundColor(.secondary)
                                                 }
@@ -185,11 +185,11 @@ struct HomeView: View {
                                     // 今日记录
                                     VStack(alignment: .leading, spacing: 16) {
                                         HStack {
-                                            Text("今日记录")
+                                            Text(L("home.recent_records"))
                                                 .font(.system(size: 18, weight: .semibold))
                                                 .foregroundColor(.primary)
                                             Spacer()
-                                            Text("\(dataManager.getTodayRecords(chargingRecords).count)条记录")
+                                            Text("\(dataManager.getTodayRecords(chargingRecords).count) " + L("common.times"))
                                                 .font(.system(size: 14))
                                                 .foregroundColor(.secondary)
                                         }
@@ -265,12 +265,12 @@ struct HomeView: View {
                 processImage(image)
             })
         }
-        .alert("识别到新站点", isPresented: $showingNewStationAlert) {
-            Button("创建站点") {
+        .alert(L("home.station_not_exist", ""), isPresented: $showingNewStationAlert) {
+            Button(L("home.create")) {
                 createNewStation(name: recognizedStationName)
                 showingManualInput = true
             }
-            Button("使用现有站点") {
+            Button(L("manual.select_station")) {
                 // 清除识别到的站点名称，让用户手动选择
                 if let data = extractedData {
                     extractedData = ExtractedChargingData(
@@ -288,9 +288,9 @@ struct HomeView: View {
                 }
                 showingManualInput = true
             }
-            Button("取消", role: .cancel) { }
+            Button(L("common.cancel"), role: .cancel) { }
         } message: {
-            Text("识别到充电站点「\(recognizedStationName)」，但该站点尚未添加到系统中。是否创建新站点？")
+            Text(L("home.station_not_exist", recognizedStationName))
         }
     }
     
@@ -1582,7 +1582,7 @@ struct SwipeableHomeRecordRow: View {
                     VStack(spacing: 4) {
                         Image(systemName: "pencil")
                             .font(.system(size: 20))
-                        Text("编辑")
+                        Text(L("common.edit"))
                             .font(.system(size: 12))
                     }
                     .foregroundColor(.white)
@@ -1600,7 +1600,7 @@ struct SwipeableHomeRecordRow: View {
                     VStack(spacing: 4) {
                         Image(systemName: "trash")
                             .font(.system(size: 20))
-                        Text("删除")
+                        Text(L("common.delete"))
                             .font(.system(size: 12))
                     }
                     .foregroundColor(.white)
