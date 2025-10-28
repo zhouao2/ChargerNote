@@ -561,6 +561,9 @@ struct ManualInputView: View {
         let pointsValue = Double(points) ?? 0
         let total = calculatedTotalAmount // 使用计算的实付金额
         
+        // 计算极能度数（从 extractedData 中获取，用于未来统计）
+        let extremeEnergy = Double(extractedData?.extremeEnergyKwh ?? "") ?? 0
+        
         if let record = editingRecord {
             // 更新现有记录
             record.location = location
@@ -572,6 +575,7 @@ struct ManualInputView: View {
             record.parkingFee = parking
             record.discountAmount = discount
             record.points = pointsValue
+            record.extremeEnergyKwh = extremeEnergy
             record.notes = notes
             record.stationType = getStationType(from: location)
         } else {
@@ -588,7 +592,8 @@ struct ManualInputView: View {
                 stationType: getStationType(from: location),
                 recordType: selectedRecordType,
                 points: pointsValue,
-                discountAmount: discount
+                discountAmount: discount,
+                extremeEnergyKwh: extremeEnergy
             )
             modelContext.insert(record)
         }

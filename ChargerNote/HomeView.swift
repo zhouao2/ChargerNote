@@ -282,7 +282,8 @@ struct HomeView: View {
                         points: data.points,
                         notes: data.notes,
                         chargingTime: data.chargingTime,
-                        discountAmount: data.discountAmount
+                        discountAmount: data.discountAmount,
+                        extremeEnergyKwh: data.extremeEnergyKwh
                     )
                 }
                 showingManualInput = true
@@ -423,6 +424,7 @@ struct HomeView: View {
         var pointsDiscount: String = ""
         var couponDiscount: String = ""
         var energyDiscount: String = ""
+        var extremeEnergyKwh: String = "" // 极能抵扣的度数
         var noteItems: [String] = []
         var chargingTime: Date?
         
@@ -439,8 +441,8 @@ struct HomeView: View {
             // 如果包含货币符号，尝试提取金额
             if hasMoneySymbol || startsWithMoney {
                 if let number = extractNumber(from: trimmedLine) {
-                    // 过滤掉不合理的金额（小于0.01或大于100000）
-                    if number >= 0.01 && number <= 100000 {
+                    // 过滤掉不合理的金额（0.00~100000，包含0.00用于服务费和实付）
+                    if number >= 0.0 && number <= 100000 {
                         amountLines.append((index, number))
                         print("💰 找到金额行[\(index)]: ¥\(String(format: "%.2f", number)) - \(trimmedLine)")
                     }
@@ -462,7 +464,8 @@ struct HomeView: View {
             (["比亚迪", "BYD"], "比亚迪充电站"),
             (["理想", "Li Auto", "LIXIANG"], "理想充电站"),
             (["问界", "AITO"], "问界充电站"),
-            (["极氪", "ZEEKR"], "极氪充电站")
+            (["极氪", "ZEEKR"], "极氪充电站"),
+            (["鲸充", "JINGCHONG"], "鲸充充电站")  // 新增鲸充品牌
         ]
         
         // 充电站后缀关键词（用于识别通用充电站名称）
@@ -548,14 +551,14 @@ struct HomeView: View {
                 if !foundBrand {
                     for suffix in stationSuffixes {
                         if trimmedLine.contains(suffix) {
-                            // 提取完整的站点名称（移除特殊字符，保留中文、英文、数字）
+                            // 提取完整的站点名称（移除冒号，保留【】前缀、中文、英文、数字）
                             let cleanedLine = trimmedLine
                                 .replacingOccurrences(of: "：", with: "")
                                 .replacingOccurrences(of: ":", with: "")
                                 .trimmingCharacters(in: .whitespaces)
                             
-                            // 如果这行文字长度合理（5-30个字符）且包含充电站后缀，就认为是站点名称
-                            if cleanedLine.count >= 5 && cleanedLine.count <= 30 {
+                            // 如果这行文字长度合理（5-40个字符，增加长度以支持【】前缀）且包含充电站后缀
+                            if cleanedLine.count >= 5 && cleanedLine.count <= 40 {
                                 location = cleanedLine
                                 print("✅ 识别到充电站(通用): \(location)")
                                 break
@@ -575,14 +578,14 @@ struct HomeView: View {
                     let hasNextDetail = detailKeywords.contains(where: { nextLine.contains($0) })
                     
                     if hasPreviousStatus || hasNextDetail {
-                        // 这行文字可能是站点名称
+                        // 这行文字可能是站点名称（保留【】前缀）
                         let cleanedLine = trimmedLine
                             .replacingOccurrences(of: "：", with: "")
                             .replacingOccurrences(of: ":", with: "")
                             .trimmingCharacters(in: .whitespaces)
                         
-                        // 长度合理且不包含特殊关键词
-                        if cleanedLine.count >= 3 && cleanedLine.count <= 30 &&
+                        // 长度合理且不包含特殊关键词（增加长度上限以支持【】前缀）
+                        if cleanedLine.count >= 3 && cleanedLine.count <= 40 &&
                            !detailKeywords.contains(where: { cleanedLine.contains($0) }) &&
                            !statusKeywords.contains(where: { cleanedLine.contains($0) }) {
                             location = cleanedLine
@@ -802,12 +805,72 @@ struct HomeView: View {
                 }
             }
             
-            // 8. 提取极能抵扣
+            // 8. 提取极能抵扣（智能跨行搜索）
             if energyDiscount.isEmpty && trimmedLine.contains("极能抵扣") {
-                energyDiscount = trimmedLine
+                print("⚡️ 发现极能抵扣关键词: \(trimmedLine)")
+                // 先尝试从当前行提取
+                let currentLineValue = trimmedLine
                     .replacingOccurrences(of: "极能抵扣", with: "")
                     .trimmingCharacters(in: .whitespaces)
-                print("✅ 提取到极能抵扣: \(energyDiscount)")
+                
+                if !currentLineValue.isEmpty && (currentLineValue.contains("度") || currentLineValue.contains("¥")) {
+                    energyDiscount = currentLineValue
+                    print("✅ 提取到极能抵扣(当前行): \(energyDiscount)")
+                    
+                    // 提取极能度数（如 "29.797度（¥41.33）" 提取 29.797）
+                    if let kwhMatch = energyDiscount.range(of: #"(\d+\.?\d*)\s*度"#, options: .regularExpression) {
+                        let kwhString = String(energyDiscount[kwhMatch])
+                        if let kwh = extractNumber(from: kwhString) {
+                            extremeEnergyKwh = String(format: "%.3f", kwh)
+                            print("⚡️ 提取到极能度数: \(extremeEnergyKwh) kWh")
+                        }
+                    }
+                    
+                    // 标记对应的金额为已使用
+                    if let amount = extractNumber(from: energyDiscount) {
+                        for (idx, amountLine) in amountLines.enumerated() {
+                            if abs(amountLine.value - amount) < 0.01 && !usedAmountIndices.contains(idx) {
+                                usedAmountIndices.insert(idx)
+                                print("🚫 标记极能抵扣金额为已使用: ¥\(String(format: "%.2f", amount))")
+                                break
+                            }
+                        }
+                    }
+                } else {
+                    // 如果当前行为空或没有有效信息，搜索后续15行内包含"度"和"¥"的行
+                    for searchIndex in (index + 1)..<min(index + 16, lines.count) {
+                        let searchLine = lines[searchIndex].trimmingCharacters(in: .whitespaces)
+                        // 匹配格式：XX.XXX度（¥XX.XX）或 XX.XXX度(¥XX.XX)
+                        if searchLine.contains("度") && (searchLine.contains("¥") || searchLine.contains("￥")) {
+                            energyDiscount = searchLine
+                            print("✅ 提取到极能抵扣(跨行搜索): \(energyDiscount) (行内容: \(searchLine))")
+                            
+                            // 提取极能度数（如 "29.797度（¥41.33）" 提取 29.797）
+                            if let kwhMatch = energyDiscount.range(of: #"(\d+\.?\d*)\s*度"#, options: .regularExpression) {
+                                let kwhString = String(energyDiscount[kwhMatch])
+                                if let kwh = extractNumber(from: kwhString) {
+                                    extremeEnergyKwh = String(format: "%.3f", kwh)
+                                    print("⚡️ 提取到极能度数: \(extremeEnergyKwh) kWh")
+                                }
+                            }
+                            
+                            // 标记对应的金额为已使用
+                            if let amount = extractNumber(from: energyDiscount) {
+                                for (idx, amountLine) in amountLines.enumerated() {
+                                    if abs(amountLine.value - amount) < 0.01 && !usedAmountIndices.contains(idx) {
+                                        usedAmountIndices.insert(idx)
+                                        print("🚫 标记极能抵扣金额为已使用: ¥\(String(format: "%.2f", amount))")
+                                        break
+                                    }
+                                }
+                            }
+                            break
+                        }
+                    }
+                    if energyDiscount.isEmpty {
+                        print("❌ 极能抵扣提取失败（未找到度数+金额）")
+                    }
+                }
             }
             
             // 9. 提取优惠券（特殊处理：优先搜索包含-¥的行）
@@ -924,6 +987,9 @@ struct HomeView: View {
         }
         if !energyDiscount.isEmpty {
             print("  - 极能抵扣: \(energyDiscount)")
+            if !extremeEnergyKwh.isEmpty {
+                print("  - 极能度数: \(extremeEnergyKwh) kWh")
+            }
         }
         if !couponDiscount.isEmpty {
             print("  - 优惠券: -¥\(couponDiscount)")
@@ -938,30 +1004,35 @@ struct HomeView: View {
             print("⚠️ chargingTime 为 nil，ManualInputView 将使用默认当前时间")
         }
         
-        // 计算总优惠金额（优惠券 + 极分抵扣 + 极能抵扣中的金额）
+        // ⚡️ 计算总优惠金额（只取一种抵扣，优先级：极能 > 极分 > 优惠券）
+        // 根据10张实例分析：每个订单只有一种抵扣，不会同时出现多种
         var totalDiscount: Double = 0.0
+        var discountType: String = ""
         
-        // 1. 优惠券金额
-        if let couponAmount = Double(couponDiscount) {
-            totalDiscount += couponAmount
-        }
-        
-        // 2. 极分抵扣金额
-        if let pointsDiscountAmount = Double(pointsDiscount) {
-            totalDiscount += pointsDiscountAmount
-        }
-        
-        // 3. 极能抵扣中的金额部分（如果有）
+        // 优先级1：极能抵扣（通常实付为0）
         if !energyDiscount.isEmpty {
-            // 尝试从极能抵扣字符串中提取金额，例如 "29.797度(¥ 41.33)"
+            // 从极能抵扣字符串中提取金额，例如 "29.797度(¥ 41.33)"
             if let amount = extractNumber(from: energyDiscount) {
-                totalDiscount += amount
+                totalDiscount = amount
+                discountType = "极能抵扣"
             }
+        }
+        // 优先级2：极分抵扣（如果没有极能抵扣，通常实付为0）
+        else if let pointsDiscountAmount = Double(pointsDiscount) {
+            totalDiscount = pointsDiscountAmount
+            discountType = "极分抵扣"
+        }
+        // 优先级3：优惠券（如果没有极能和极分抵扣，实付可能>0）
+        else if let couponAmount = Double(couponDiscount) {
+            totalDiscount = couponAmount
+            discountType = "优惠券"
         }
         
         let discountAmountString = totalDiscount > 0 ? String(format: "%.2f", totalDiscount) : ""
         if !discountAmountString.isEmpty {
-            print("  - 总优惠金额: ¥\(discountAmountString)")
+            print("  - 总优惠金额: ¥\(discountAmountString) (类型: \(discountType))")
+        } else {
+            print("  - 总优惠金额: ¥0.00 (无抵扣)")
         }
         
         // 保存提取的数据
@@ -974,7 +1045,8 @@ struct HomeView: View {
             points: points,
             notes: notes,
             chargingTime: chargingTime,
-            discountAmount: discountAmountString
+            discountAmount: discountAmountString,
+            extremeEnergyKwh: extremeEnergyKwh
         )
         
         print("✅ ExtractedChargingData 已创建并保存")
@@ -1030,8 +1102,8 @@ struct HomeView: View {
             if let range = Range(match.range, in: normalizedText) {
                 let numberString = String(normalizedText[range])
                 if let number = Double(numberString) {
-                    // 只保留合理范围内的数字（排除年份、日期等）
-                    if number > 0 && number < 100000 {
+                    // 只保留合理范围内的数字（包含0.0用于服务费和实付，排除年份、日期等）
+                    if number >= 0 && number < 100000 {
                         numbers.append(number)
                         print("    发现数字: \(number)")
                     }
@@ -1076,6 +1148,7 @@ struct ExtractedChargingData {
     let notes: String
     let chargingTime: Date?
     let discountAmount: String // 优惠金额
+    let extremeEnergyKwh: String // 极能抵扣的度数
 }
 
 // 可左滑的首页记录行组件
