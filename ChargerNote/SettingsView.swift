@@ -14,6 +14,7 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var backupManager: DataBackupManager
     @Query private var chargingRecords: [ChargingRecord]
     @Query private var categories: [ChargingStationCategory]
     @Query private var userSettings: [UserSettings]
@@ -225,12 +226,32 @@ struct SettingsView: View {
                                         hasArrow: true,
                                         action: exportCSV
                                     )
-                                    SettingsRow(
-                                        icon: "icloud.and.arrow.up",
-                                        title: isBackingUp ? L("settings.backing_up") : L("settings.backup_to_icloud"),
-                                        hasArrow: true,
-                                        action: backupToiCloud
-                                    )
+                                    
+                                    // 备份到 iCloud（带最后备份时间）
+                                    VStack(spacing: 0) {
+                                        SettingsRow(
+                                            icon: "icloud.and.arrow.up",
+                                            title: isBackingUp ? L("settings.backing_up") : L("settings.backup_to_icloud"),
+                                            hasArrow: true,
+                                            showSeparator: false,
+                                            action: backupToiCloud
+                                        )
+                                        
+                                        // 最后备份时间
+                                        HStack {
+                                            Spacer()
+                                            Image(systemName: "clock")
+                                                .font(.system(size: 11))
+                                                .foregroundColor(.secondary)
+                                            Text("\(L("backup.last_backup")): \(backupManager.getLastBackupDescription())")
+                                                .font(.system(size: 11))
+                                                .foregroundColor(.secondary)
+                                        }
+                                        .padding(.horizontal, 16)
+                                        .padding(.top, 4)
+                                        .padding(.bottom, 12)
+                                    }
+                                    
                                     SettingsRow(
                                         icon: "icloud.and.arrow.down",
                                         title: isRestoring ? L("settings.restoring") : L("settings.restore_from_icloud"),
@@ -557,6 +578,9 @@ struct SettingsView: View {
             
             isBackingUp = false
             iCloudBackupURL = IdentifiableURL(filePath)
+            
+            // 更新最后备份时间
+            backupManager.updateManualBackupDate()
             
             // 显示成功消息
             backupMessage = L("backup.preparing_save")

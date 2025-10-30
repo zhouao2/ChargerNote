@@ -11,6 +11,8 @@ import SwiftData
 @main
 struct ChargerNoteApp: App {
     @StateObject private var themeManager = ThemeManager.shared
+    @StateObject private var backupManager = DataBackupManager.shared
+    @Environment(\.scenePhase) private var scenePhase
     
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
@@ -73,8 +75,58 @@ struct ChargerNoteApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(themeManager)
+                .environmentObject(backupManager)
                 .preferredColorScheme(themeManager.currentTheme.colorScheme)
+                .onAppear {
+                    performInitialBackupCheck()
+                }
         }
         .modelContainer(sharedModelContainer)
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            if newPhase == .background {
+                // App 进入后台时自动备份
+                performAutoBackup()
+            }
+        }
+    }
+    
+    // MARK: - 备份相关方法
+    
+    /// 首次启动时检查本地备份
+    private func performInitialBackupCheck() {
+        Task {
+            do {
+                let modelContext = sharedModelContainer.mainContext
+                let recordsCount = try modelContext.fetchCount(FetchDescriptor<ChargingRecord>())
+                
+                // 如果本地没有数据，尝试从备份恢复
+                if recordsCount == 0 {
+                    try await backupManager.restoreFromLocalBackup(modelContext: modelContext)
+                }
+            } catch {
+                print("⚠️ 初始备份检查失败: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    /// 执行自动备份
+    private func performAutoBackup() {
+        Task { @MainActor in
+            do {
+                let modelContext = sharedModelContainer.mainContext
+                
+                // 获取所有数据
+                let recordsDescriptor = FetchDescriptor<ChargingRecord>()
+                let records = try modelContext.fetch(recordsDescriptor)
+                
+                let categoriesDescriptor = FetchDescriptor<ChargingStationCategory>()
+                let categories = try modelContext.fetch(categoriesDescriptor)
+                
+                // 执行自动备份
+                try await backupManager.performAutoBackup(records: records, categories: categories)
+            } catch {
+                print("⚠️ 自动备份失败: \(error.localizedDescription)")
+            }
+        }
     }
 }

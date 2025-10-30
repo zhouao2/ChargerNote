@@ -224,6 +224,11 @@
 "csv.notes" = "备注";
 "csv.no_notes" = "无";
 
+// MARK: - Backup Manager
+"backup.last_backup" = "最后备份";
+"backup.never" = "从未备份";
+"backup.auto_backup_enabled" = "自动备份已启用";
+
 // MARK: - Common
 "common.save" = "保存";
 "common.cancel" = "取消";

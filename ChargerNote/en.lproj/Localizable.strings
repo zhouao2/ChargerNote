@@ -224,6 +224,11 @@
 "csv.notes" = "Notes";
 "csv.no_notes" = "None";
 
+// MARK: - Backup Manager
+"backup.last_backup" = "Last Backup";
+"backup.never" = "Never";
+"backup.auto_backup_enabled" = "Auto Backup Enabled";
+
 // MARK: - Common
 "common.save" = "Save";
 "common.cancel" = "Cancel";
