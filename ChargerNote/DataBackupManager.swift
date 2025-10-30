@@ -117,21 +117,25 @@ class DataBackupManager: ObservableObject {
             for recordData in recordsData {
                 let record = ChargingRecord(
                     location: recordData["location"] as? String ?? "",
-                    amount: recordData["amount"] as? Double ?? 0,
-                    electricityAmount: recordData["electricityAmount"] as? Double ?? 0,
-                    serviceFee: recordData["serviceFee"] as? Double ?? 0,
-                    totalAmount: recordData["totalAmount"] as? Double ?? 0,
-                    chargingTime: Date(timeIntervalSince1970: recordData["chargingTime"] as? TimeInterval ?? 0),
-                    parkingFee: recordData["parkingFee"] as? Double ?? 0,
+                    amount: parseDouble(from: recordData["amount"]) ?? 0,
+                    electricityAmount: parseDouble(from: recordData["electricityAmount"]) ?? 0,
+                    serviceFee: parseDouble(from: recordData["serviceFee"]) ?? 0,
+                    totalAmount: parseDouble(from: recordData["totalAmount"]) ?? 0,
+                    chargingTime: Date(timeIntervalSince1970: parseDouble(from: recordData["chargingTime"]) ?? 0),
+                    parkingFee: parseDouble(from: recordData["parkingFee"]) ?? 0,
                     notes: recordData["notes"] as? String ?? "",
                     stationType: recordData["stationType"] as? String ?? "",
                     recordType: recordData["recordType"] as? String ?? "充电",
-                    points: recordData["points"] as? Double ?? 0,
-                    discountAmount: recordData["discountAmount"] as? Double ?? 0,
-                    extremeEnergyKwh: recordData["extremeEnergyKwh"] as? Double ?? 0
+                    points: parseDouble(from: recordData["points"]) ?? 0,
+                    discountAmount: parseDouble(from: recordData["discountAmount"]) ?? 0,
+                    extremeEnergyKwh: parseDouble(from: recordData["extremeEnergyKwh"]) ?? 0
                 )
                 modelContext.insert(record)
             }
+            
+            // 保存 ModelContext 以确保数据持久化
+            try modelContext.save()
+            print("✅ 已恢复 \(recordsData.count) 条记录")
         }
         
         // 恢复充电站分类
@@ -145,6 +149,10 @@ class DataBackupManager: ObservableObject {
                 )
                 modelContext.insert(category)
             }
+            
+            // 再次保存以确保分类数据持久化
+            try modelContext.save()
+            print("✅ 已恢复 \(categoriesData.count) 个分类")
         }
         
         print("✅ 本地备份恢复完成")
@@ -160,6 +168,28 @@ class DataBackupManager: ObservableObject {
     }
     
     // MARK: - 辅助方法
+    
+    /// 从字典值中解析 Double（支持字符串和数字类型）
+    private func parseDouble(from value: Any?) -> Double? {
+        guard let value = value else { return nil }
+        
+        // 如果是 Double 类型，直接返回
+        if let doubleValue = value as? Double {
+            return doubleValue
+        }
+        
+        // 如果是字符串类型，转换为 Double
+        if let stringValue = value as? String {
+            return Double(stringValue)
+        }
+        
+        // 如果是 Int 类型，转换为 Double
+        if let intValue = value as? Int {
+            return Double(intValue)
+        }
+        
+        return nil
+    }
     
     private func prepareBackupData(records: [ChargingRecord], categories: [ChargingStationCategory]) -> [String: Any] {
         var backupData: [String: Any] = [:]
