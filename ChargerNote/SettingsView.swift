@@ -167,7 +167,7 @@ struct SettingsView: View {
                             // 白色内容区域
                             VStack(spacing: 24) {
                                 // 主题设置
-                                CollapsibleSettingsSection(title: "外观设置", isExpanded: $isAppearanceExpanded) {
+                                CollapsibleSettingsSection(title: L("settings.appearance"), isExpanded: $isAppearanceExpanded) {
                                     ForEach(AppTheme.allCases, id: \.self) { theme in
                                         SettingsRow(
                                             icon: theme == .light ? "sun.max.fill" : theme == .dark ? "moon.fill" : "circle.lefthalf.filled",
@@ -181,7 +181,7 @@ struct SettingsView: View {
                                 }
                                 
                                 // 语言设置
-                                CollapsibleSettingsSection(title: "语言 / Language", isExpanded: $isLanguageExpanded) {
+                                CollapsibleSettingsSection(title: L("settings.language_region"), isExpanded: $isLanguageExpanded) {
                                     ForEach(Language.allCases, id: \.self) { language in
                                         SettingsRow(
                                             icon: language.icon,
@@ -196,7 +196,7 @@ struct SettingsView: View {
                                 }
                                 
                                 // 货币单位设置
-                                CollapsibleSettingsSection(title: "货币单位", isExpanded: $isCurrencyExpanded) {
+                                CollapsibleSettingsSection(title: L("settings.currency_unit"), isExpanded: $isCurrencyExpanded) {
                                     ForEach(Currency.allCases, id: \.self) { currency in
                                         SettingsRow(
                                             icon: currency.icon,
@@ -211,39 +211,39 @@ struct SettingsView: View {
                                 }
                                 
                                 // 充电站管理
-                                CollapsibleSettingsSection(title: "充电站管理", isExpanded: $isStationExpanded) {
-                                    SettingsRow(icon: "mappin.and.ellipse", title: "管理充电站", hasArrow: true, action: {
+                                CollapsibleSettingsSection(title: L("settings.station_management"), isExpanded: $isStationExpanded) {
+                                    SettingsRow(icon: "mappin.and.ellipse", title: L("settings.manage_stations"), hasArrow: true, action: {
                                         showingCategoryManagement = true
                                     })
                                 }
                                 
                                 // 数据管理
-                                CollapsibleSettingsSection(title: "数据管理", isExpanded: $isDataExpanded) {
+                                CollapsibleSettingsSection(title: L("settings.data_management"), isExpanded: $isDataExpanded) {
                                     SettingsRow(
                                         icon: "square.and.arrow.down",
-                                        title: isExporting ? "导出中..." : "导出CSV数据",
+                                        title: isExporting ? L("settings.exporting") : L("settings.export_csv_data"),
                                         hasArrow: true,
                                         action: exportCSV
                                     )
                                     SettingsRow(
                                         icon: "icloud.and.arrow.up",
-                                        title: isBackingUp ? "备份中..." : "备份到iCloud",
+                                        title: isBackingUp ? L("settings.backing_up") : L("settings.backup_to_icloud"),
                                         hasArrow: true,
                                         action: backupToiCloud
                                     )
                                     SettingsRow(
                                         icon: "icloud.and.arrow.down",
-                                        title: isRestoring ? "恢复中..." : "从iCloud恢复",
+                                        title: isRestoring ? L("settings.restoring") : L("settings.restore_from_icloud"),
                                         hasArrow: true,
                                         action: restoreFromiCloud
                                     )
                                 }
                                 
                                 // 应用信息
-                                SettingsSection(title: "应用信息") {
-                                    SettingsRow(title: "版本号", value: "1.0.0")
-                                    SettingsRow(title: "构建版本", value: "2025.10.25")
-                                    SettingsRow(title: "开发者", value: "Zhou Ao")
+                                SettingsSection(title: L("settings.app_info")) {
+                                    SettingsRow(title: L("settings.version"), value: "1.0.0")
+                                    SettingsRow(title: L("settings.build_version"), value: "2025.10.25")
+                                    SettingsRow(title: L("settings.developer_name"), value: "Zhou Ao")
                                     SettingsRow(
                                         icon: "link",
                                         title: "GitHub",
@@ -258,8 +258,8 @@ struct SettingsView: View {
                                 }
                                 
                                 // 危险操作
-                                CollapsibleSettingsSection(title: "危险操作", isExpanded: $isDangerExpanded) {
-                                    SettingsRow(icon: "trash", title: "清除所有数据", titleColor: .red, hasArrow: true, action: {
+                                CollapsibleSettingsSection(title: L("settings.dangerous"), isExpanded: $isDangerExpanded) {
+                                    SettingsRow(icon: "trash", title: L("settings.clear_all_data"), titleColor: .red, hasArrow: true, action: {
                                         showingDeleteAlert = true
                                     })
                                 }
@@ -321,18 +321,18 @@ struct SettingsView: View {
                 restoreFromBackupFile(url: url)
             })
         }
-        .alert("清除所有数据", isPresented: $showingDeleteAlert) {
-            Button("取消", role: .cancel) { }
-            Button("清除", role: .destructive) {
+        .alert(L("clear_data.title"), isPresented: $showingDeleteAlert) {
+            Button(L("clear_data.cancel"), role: .cancel) { }
+            Button(L("clear_data.confirm"), role: .destructive) {
                 deleteAllData()
             }
         } message: {
-            Text("此操作将永久删除所有充电记录，此操作不可撤销。确定要继续吗？")
+            Text(L("clear_data.message"))
         }
-        .alert("语言已更改 / Language Changed", isPresented: $showingLanguageAlert) {
-            Button("确定 / OK", role: .cancel) { }
+        .alert(L("language.changed_title"), isPresented: $showingLanguageAlert) {
+            Button(L("language.changed_ok"), role: .cancel) { }
         } message: {
-            Text("请重启应用以应用新的语言设置\nPlease restart the app to apply the new language settings")
+            Text(L("language.changed_message"))
         }
         .onAppear {
             if categories.isEmpty {
@@ -426,7 +426,7 @@ struct SettingsView: View {
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         
         // 构建 CSV 内容
-        var csvContent = "日期,充电地点,记录类型,充电度数(kWh),电费金额,服务费,总金额,停车费,优惠金额,积分,极能度数(kWh),备注\n"
+        var csvContent = "\(L("csv.date")),\(L("csv.location")),\(L("csv.record_type")),\(L("csv.kwh")),\(L("csv.electricity_fee")),\(L("csv.service_fee")),\(L("csv.total")),\(L("csv.parking")),\(L("csv.discount")),\(L("csv.points")),\(L("csv.extreme_energy")),\(L("csv.notes"))\n"
         
         for record in chargingRecords.sorted(by: { $0.chargingTime > $1.chargingTime }) {
             let date = dateFormatter.string(from: record.chargingTime)
@@ -440,7 +440,7 @@ struct SettingsView: View {
             let discountAmount = String(format: "%.2f", record.discountAmount)
             let points = String(format: "%.0f", record.points)
             let extremeEnergyKwh = String(format: "%.3f", record.extremeEnergyKwh)
-            let notes = record.notes.isEmpty ? "无" : record.notes
+            let notes = record.notes.isEmpty ? L("csv.no_notes") : record.notes
             
             csvContent += "\(date),\(location),\(recordType),\(electricityAmount),\(amount),\(serviceFee),\(totalAmount),\(parkingFee),\(discountAmount),\(points),\(extremeEnergyKwh),\(notes)\n"
         }
@@ -455,7 +455,7 @@ struct SettingsView: View {
             let dateFormatter = DateFormatter()
             dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
             let dateString = dateFormatter.string(from: Date())
-            let fileName = "充电记录_\(dateString).csv"
+            let fileName = "\(L("export.filename_prefix"))_\(dateString).csv"
             
             let fileManager = FileManager.default
             let tempDir = fileManager.temporaryDirectory
@@ -467,7 +467,7 @@ struct SettingsView: View {
                 exportedFileURL = IdentifiableURL(filePath)
                 
                 // 显示成功消息
-                backupMessage = "准备分享文件"
+                backupMessage = L("export.preparing_file")
                 
                 // 3秒后清除消息
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -475,7 +475,7 @@ struct SettingsView: View {
                 }
             } catch {
                 isExporting = false
-                backupMessage = "导出失败"
+                backupMessage = L("export.failed")
                 
                 // 3秒后清除消息
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -559,7 +559,7 @@ struct SettingsView: View {
             iCloudBackupURL = IdentifiableURL(filePath)
             
             // 显示成功消息
-            backupMessage = "准备保存到iCloud"
+            backupMessage = L("backup.preparing_save")
             
             // 3秒后清除消息
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -567,7 +567,7 @@ struct SettingsView: View {
             }
         } catch {
             isBackingUp = false
-            backupMessage = "备份失败: \(error.localizedDescription)"
+            backupMessage = String(format: L("settings.backup_failed"), error.localizedDescription)
             
             // 3秒后清除消息
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -600,12 +600,12 @@ struct SettingsView: View {
             let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any]
             
             guard let backupData = json else {
-                throw NSError(domain: "BackupError", code: 1, userInfo: [NSLocalizedDescriptionKey: "无效的备份文件"])
+                throw NSError(domain: "BackupError", code: 1, userInfo: [NSLocalizedDescriptionKey: L("backup.invalid_file")])
             }
             
             // 验证版本
             if let version = backupData["version"] as? String, version != "1.0" {
-                throw NSError(domain: "BackupError", code: 2, userInfo: [NSLocalizedDescriptionKey: "不支持的备份版本"])
+                throw NSError(domain: "BackupError", code: 2, userInfo: [NSLocalizedDescriptionKey: L("backup.unsupported_version")])
             }
             
             // 恢复数据
@@ -708,7 +708,7 @@ struct SettingsView: View {
             }
             
             isRestoring = false
-            backupMessage = "恢复成功"
+            backupMessage = L("restore.succeeded")
             
             // 3秒后清除消息
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -716,7 +716,7 @@ struct SettingsView: View {
             }
         } catch {
             isRestoring = false
-            backupMessage = "恢复失败: \(error.localizedDescription)"
+            backupMessage = String(format: L("settings.restore_failed"), error.localizedDescription)
             
             // 3秒后清除消息
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -742,7 +742,7 @@ struct SettingsView: View {
         }
         
         // 显示成功消息
-        backupMessage = "已清除所有数据"
+        backupMessage = L("clear.succeeded")
         
         // 3秒后清除消息
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -850,7 +850,7 @@ struct SettingsSection<Content: View>: View {
                         HStack(spacing: 4) {
                             Image(systemName: "plus")
                                 .font(.system(size: 12))
-                            Text("添加")
+                            Text(L("station.add"))
                                 .font(.system(size: 14, weight: .medium))
                         }
                         .foregroundColor(.green)
@@ -1025,12 +1025,12 @@ struct CategoryManagementView: View {
                 }
                 .onMove(perform: moveCategories)
             }
-            .navigationTitle("充电站管理")
+            .navigationTitle(L("station.management_title"))
             .navigationBarTitleDisplayMode(.inline)
             .environment(\.editMode, $editMode)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("取消") {
+                    Button(L("common.cancel")) {
                         dismiss()
                     }
                 }
@@ -1046,16 +1046,16 @@ struct CategoryManagementView: View {
                         Button(action: {
                             editMode = editMode == .active ? .inactive : .active
                         }) {
-                            Text(editMode == .active ? "完成" : "排序")
+                            Text(editMode == .active ? L("common.done") : L("station.sort"))
                         }
                     }
                 }
             }
-            .alert("删除充电站", isPresented: $showingDeleteConfirmation) {
-                Button("取消", role: .cancel) {
+            .alert(L("station.delete_alert_title"), isPresented: $showingDeleteConfirmation) {
+                Button(L("common.cancel"), role: .cancel) {
                     categoryToDelete = nil
                 }
-                Button("删除", role: .destructive) {
+                Button(L("common.delete"), role: .destructive) {
                     if let category = categoryToDelete {
                         deleteCategory(category)
                     }
@@ -1064,9 +1064,9 @@ struct CategoryManagementView: View {
                 if let category = categoryToDelete {
                     let recordCount = chargingRecords.filter { $0.stationType == category.name }.count
                     if recordCount > 0 {
-                        Text("该充电站有 \(recordCount) 条充电记录，删除后这些记录的站点类型将保留。确定要删除吗？")
+                        Text(String(format: L("station.delete_alert_message_with_records"), recordCount))
                     } else {
-                        Text("确定要删除该充电站吗？")
+                        Text(L("station.delete_alert_message"))
                     }
                 }
             }
@@ -1132,13 +1132,13 @@ struct AddCategoryView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 24) {
-                TextField("充电站名称", text: $categoryName)
+                TextField(L("station.name"), text: $categoryName)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.horizontal)
                 
                 // 颜色选择器
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("选择颜色")
+                    Text(L("station.select_color"))
                         .font(.system(size: 16, weight: .medium))
                         .padding(.horizontal)
                     
@@ -1161,7 +1161,7 @@ struct AddCategoryView: View {
                 
                 // 图标选择器
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("选择图标")
+                    Text(L("station.select_icon"))
                         .font(.system(size: 16, weight: .medium))
                         .padding(.horizontal)
                     
@@ -1191,17 +1191,17 @@ struct AddCategoryView: View {
                 Spacer()
             }
             .padding(.top)
-            .navigationTitle("添加充电站")
+            .navigationTitle(L("station.add_new"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("取消") {
+                    Button(L("common.cancel")) {
                         dismiss()
                     }
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
+                    Button(L("common.save")) {
                         saveCategory()
                     }
                     .disabled(categoryName.isEmpty)
@@ -1260,13 +1260,13 @@ struct EditCategoryView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 24) {
-                TextField("充电站名称", text: $categoryName)
+                TextField(L("station.name"), text: $categoryName)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.horizontal)
                 
                 // 颜色选择器
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("选择颜色")
+                    Text(L("station.select_color"))
                         .font(.system(size: 16, weight: .medium))
                         .padding(.horizontal)
                     
@@ -1289,7 +1289,7 @@ struct EditCategoryView: View {
                 
                 // 图标选择器
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("选择图标")
+                    Text(L("station.select_icon"))
                         .font(.system(size: 16, weight: .medium))
                         .padding(.horizontal)
                     
@@ -1319,17 +1319,17 @@ struct EditCategoryView: View {
                 Spacer()
             }
             .padding(.top)
-            .navigationTitle("编辑充电站")
+            .navigationTitle(L("station.edit_station"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("取消") {
+                    Button(L("common.cancel")) {
                         dismiss()
                     }
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
+                    Button(L("common.save")) {
                         updateCategory()
                     }
                     .disabled(categoryName.isEmpty)
@@ -1471,7 +1471,7 @@ struct SwipeableCategoryRow: View {
                     VStack(spacing: 4) {
                         Image(systemName: "pencil")
                             .font(.system(size: 20))
-                        Text("编辑")
+                        Text(L("common.edit"))
                             .font(.system(size: 12))
                     }
                     .foregroundColor(.white)
@@ -1489,7 +1489,7 @@ struct SwipeableCategoryRow: View {
                     VStack(spacing: 4) {
                         Image(systemName: "trash")
                             .font(.system(size: 20))
-                        Text("删除")
+                        Text(L("common.delete"))
                             .font(.system(size: 12))
                     }
                     .foregroundColor(.white)

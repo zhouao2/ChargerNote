@@ -158,6 +158,71 @@
 "settings.language_switch.title" = "Language Switch";
 "settings.language_switch.message" = "The language will take effect after restarting the app";
 "settings.ok" = "OK";
+"settings.appearance" = "Appearance";
+"settings.currency_unit" = "Currency";
+"settings.language_region" = "Language / 语言";
+"settings.app_info" = "App Info";
+"settings.build_version" = "Build";
+"settings.developer_name" = "Developer";
+"settings.dangerous" = "Danger Zone";
+"settings.clear_all_data" = "Clear All Data";
+"settings.exporting" = "Exporting...";
+"settings.export_csv_data" = "Export CSV";
+"settings.backing_up" = "Backing up...";
+"settings.backup_to_icloud" = "Backup to iCloud";
+"settings.restoring" = "Restoring...";
+"settings.restore_from_icloud" = "Restore from iCloud";
+
+// MARK: - Station Management
+"station.management_title" = "Stations";
+"station.add" = "Add";
+"station.edit" = "Edit";
+"station.delete" = "Delete";
+"station.sort" = "Sort";
+"station.add_new" = "Add Station";
+"station.edit_station" = "Edit Station";
+"station.name" = "Station Name";
+"station.select_color" = "Select Color";
+"station.select_icon" = "Select Icon";
+"station.delete_alert_title" = "Delete Station";
+"station.delete_alert_message_with_records" = "This station has %d charging records. After deletion, these records will retain their station type. Continue?";
+"station.delete_alert_message" = "Are you sure you want to delete this station?";
+
+// MARK: - Clear Data Alert
+"clear_data.title" = "Clear All Data";
+"clear_data.message" = "This will permanently delete all charging records. This action cannot be undone. Continue?";
+"clear_data.cancel" = "Cancel";
+"clear_data.confirm" = "Clear";
+
+// MARK: - Language Change Alert
+"language.changed_title" = "Language Changed / 语言已更改";
+"language.changed_message" = "Please restart the app to apply the new language settings\n请重启应用以应用新的语言设置";
+"language.changed_ok" = "OK / 确定";
+
+// MARK: - Export/Backup
+"export.preparing_file" = "Preparing to share file";
+"export.failed" = "Export failed";
+"export.filename_prefix" = "Charging_Records";
+"backup.preparing_save" = "Preparing to save to iCloud";
+"backup.invalid_file" = "Invalid backup file";
+"backup.unsupported_version" = "Unsupported backup version";
+"restore.succeeded" = "Restore successful";
+"clear.succeeded" = "All data cleared";
+
+// MARK: - CSV Headers
+"csv.date" = "Date";
+"csv.location" = "Location";
+"csv.record_type" = "Type";
+"csv.kwh" = "kWh";
+"csv.electricity_fee" = "Electricity Fee";
+"csv.service_fee" = "Service Fee";
+"csv.total" = "Total";
+"csv.parking" = "Parking";
+"csv.discount" = "Discount";
+"csv.points" = "Points";
+"csv.extreme_energy" = "Extreme Energy (kWh)";
+"csv.notes" = "Notes";
+"csv.no_notes" = "None";
 
 // MARK: - Common
 "common.save" = "Save";

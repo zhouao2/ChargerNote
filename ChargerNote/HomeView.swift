@@ -131,9 +131,9 @@ struct HomeView: View {
                                                     Text(L("home.ocr.title"))
                                                         .font(.system(size: 16, weight: .semibold))
                                                         .foregroundColor(.primary)
-                                                    Text(L("home.extract_success"))
-                                                        .font(.system(size: 12))
-                                                        .foregroundColor(.secondary)
+//                                                    Text(L("home.extract_success"))
+//                                                        .font(.system(size: 12))
+//                                                        .foregroundColor(.secondary)
                                                 }
                                             }
                                             .frame(maxWidth: .infinity)
@@ -164,9 +164,9 @@ struct HomeView: View {
                                                     Text(L("manual.title"))
                                                         .font(.system(size: 16, weight: .semibold))
                                                         .foregroundColor(.primary)
-                                                    Text(L("home.extracting_info"))
-                                                        .font(.system(size: 12))
-                                                        .foregroundColor(.secondary)
+//                                                    Text(L("home.extracting_info"))
+//                                                        .font(.system(size: 12))
+//                                                        .foregroundColor(.secondary)
                                                 }
                                             }
                                             .frame(maxWidth: .infinity)

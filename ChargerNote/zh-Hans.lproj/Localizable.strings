@@ -158,6 +158,71 @@
 "settings.language_switch.title" = "语言切换";
 "settings.language_switch.message" = "语言将在重启应用后生效";
 "settings.ok" = "好的";
+"settings.appearance" = "外观设置";
+"settings.currency_unit" = "货币单位";
+"settings.language_region" = "语言 / Language";
+"settings.app_info" = "应用信息";
+"settings.build_version" = "构建版本";
+"settings.developer_name" = "开发者";
+"settings.dangerous" = "危险操作";
+"settings.clear_all_data" = "清除所有数据";
+"settings.exporting" = "导出中...";
+"settings.export_csv_data" = "导出CSV数据";
+"settings.backing_up" = "备份中...";
+"settings.backup_to_icloud" = "备份到iCloud";
+"settings.restoring" = "恢复中...";
+"settings.restore_from_icloud" = "从iCloud恢复";
+
+// MARK: - Station Management
+"station.management_title" = "充电站管理";
+"station.add" = "添加";
+"station.edit" = "编辑";
+"station.delete" = "删除";
+"station.sort" = "排序";
+"station.add_new" = "添加充电站";
+"station.edit_station" = "编辑充电站";
+"station.name" = "充电站名称";
+"station.select_color" = "选择颜色";
+"station.select_icon" = "选择图标";
+"station.delete_alert_title" = "删除充电站";
+"station.delete_alert_message_with_records" = "该充电站有 %d 条充电记录，删除后这些记录的站点类型将保留。确定要删除吗？";
+"station.delete_alert_message" = "确定要删除该充电站吗？";
+
+// MARK: - Clear Data Alert
+"clear_data.title" = "清除所有数据";
+"clear_data.message" = "此操作将永久删除所有充电记录，此操作不可撤销。确定要继续吗？";
+"clear_data.cancel" = "取消";
+"clear_data.confirm" = "清除";
+
+// MARK: - Language Change Alert
+"language.changed_title" = "语言已更改 / Language Changed";
+"language.changed_message" = "请重启应用以应用新的语言设置\nPlease restart the app to apply the new language settings";
+"language.changed_ok" = "确定 / OK";
+
+// MARK: - Export/Backup
+"export.preparing_file" = "准备分享文件";
+"export.failed" = "导出失败";
+"export.filename_prefix" = "充电记录";
+"backup.preparing_save" = "准备保存到iCloud";
+"backup.invalid_file" = "无效的备份文件";
+"backup.unsupported_version" = "不支持的备份版本";
+"restore.succeeded" = "恢复成功";
+"clear.succeeded" = "已清除所有数据";
+
+// MARK: - CSV Headers
+"csv.date" = "日期";
+"csv.location" = "充电地点";
+"csv.record_type" = "记录类型";
+"csv.kwh" = "充电度数(kWh)";
+"csv.electricity_fee" = "电费金额";
+"csv.service_fee" = "服务费";
+"csv.total" = "总金额";
+"csv.parking" = "停车费";
+"csv.discount" = "优惠金额";
+"csv.points" = "积分";
+"csv.extreme_energy" = "极能度数(kWh)";
+"csv.notes" = "备注";
+"csv.no_notes" = "无";
 
 // MARK: - Common
 "common.save" = "保存";
